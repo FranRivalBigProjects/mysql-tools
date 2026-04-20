@@ -1,19 +1,942 @@
-<html>
+<!DOCTYPE html>
+
+<html lang="en">
 <head>
-<meta charset='UTF-8'>
-<title>MySQL Index Analyzer</title>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
-<link rel='stylesheet' href='styles.css'>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+<title>MySQL Index Analyzer – Detect Missing Indexes & Generate ALTER TABLE Statements</title>
+<meta name="description" content="Paste a MySQL query and optionally your CREATE TABLE schema to detect missing indexes, redundant indexes, and get ready-to-run ALTER TABLE ADD INDEX statements for performance optimization.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg:         #020617;
+    --surface:    #080f1e;
+    --surface-2:  #0d1829;
+    --border:     #162035;
+    --accent:     #f59e0b;
+    --accent-dim: rgba(245,158,11,.07);
+    --green:      #22c55e;
+    --green-dim:  rgba(34,197,94,.08);
+    --yellow:     #fbbf24;
+    --yellow-dim: rgba(251,191,36,.07);
+    --red:        #ef4444;
+    --red-dim:    rgba(239,68,68,.08);
+    --blue:       #38bdf8;
+    --blue-dim:   rgba(56,189,248,.08);
+    --purple:     #a78bfa;
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+
+    --font-display: "Space Grotesk", sans-serif;
+    --font-mono:    "Space Mono", monospace;
+    --radius:    8px;
+    --radius-lg: 16px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(245,158,11,.012) 40px, rgba(245,158,11,.012) 41px);
+    pointer-events: none; z-index: 0;
+}
+
+.wrapper {
+    position: relative; z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+}
+
+nav {
+    position: relative; z-index: 2;
+    padding: 18px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+nav a {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+}
+
+nav a:hover { color: var(--accent); }
+nav a::before { content: "<-"; }
+
+header {
+    padding: 36px 0 32px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+}
+
+.header-chip {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--purple);
+    background: rgba(167,139,250,.08);
+    border: 1px solid rgba(167,139,250,.2);
+    border-radius: 4px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+
+header h1 {
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+}
+
+header h1 .acc { color: var(--purple); }
+header p { font-size: .9rem; color: var(--muted); font-weight: 300; max-width: 560px; }
+
+.tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--purple);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin: 32px 0;
+    animation: fadeUp .5s .08s ease both;
+}
+
+.samples-row {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.sample-btn {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.sample-btn:hover { color: var(--accent); border-color: rgba(245,158,11,.3); }
+
+.editor-label {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.editor-label .dot { width: 5px; height: 5px; border-radius: 50%; }
+.dot-query  { background: var(--accent); }
+.dot-schema { background: var(--blue); }
+
+.editor-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 14px;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.editor-wrap:focus-within {
+    border-color: rgba(245,158,11,.35);
+    box-shadow: 0 0 0 3px rgba(245,158,11,.07);
+}
+
+.editor-wrap.schema-wrap:focus-within {
+    border-color: rgba(56,189,248,.35);
+    box-shadow: 0 0 0 3px rgba(56,189,248,.07);
+}
+
+textarea {
+    display: block;
+    width: 100%;
+    background: var(--surface-2);
+    border: none;
+    outline: none;
+    padding: 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.65;
+    resize: vertical;
+    tab-size: 4;
+}
+
+textarea::placeholder { color: var(--muted); opacity: .4; }
+
+.btn-run {
+    width: 100%;
+    background: var(--purple);
+    color: #fff;
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px 24px;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn-run:hover { background: #c084fc; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(167,139,250,.35); }
+.btn-run:active { transform: translateY(0); }
+
+#result { margin-top: 24px; display: none; animation: fadeUp .35s ease both; }
+#result.visible { display: block; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* summary */
+.summary-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.sum-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 12px 14px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.sum-card.sc-red    { border-left: 3px solid var(--red); }
+.sum-card.sc-yellow { border-left: 3px solid var(--yellow); }
+.sum-card.sc-green  { border-left: 3px solid var(--green); }
+.sum-card.sc-blue   { border-left: 3px solid var(--blue); }
+
+.sc-label { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sc-value { font-family: var(--font-mono); font-size: 1.3rem; color: #fff; line-height: 1.1; }
+.sc-sub   { font-size: .64rem; color: var(--muted); font-style: italic; }
+
+/* finding cards */
+.section-title {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.finding-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 4px; }
+
+.finding-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.finding-card.fc-critical { border-left: 3px solid var(--red); }
+.finding-card.fc-high     { border-left: 3px solid var(--yellow); }
+.finding-card.fc-medium   { border-left: 3px solid var(--blue); }
+.finding-card.fc-good     { border-left: 3px solid var(--green); }
+
+.fc-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 11px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.fc-badge {
+    font-family: var(--font-mono);
+    font-size: .6rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+}
+
+.fc-critical .fc-badge { background: var(--red-dim);    color: var(--red); }
+.fc-high     .fc-badge { background: var(--yellow-dim); color: var(--yellow); }
+.fc-medium   .fc-badge { background: var(--blue-dim);   color: var(--blue); }
+.fc-good     .fc-badge { background: var(--green-dim);  color: var(--green); }
+
+.fc-table {
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: #fff;
+    font-weight: 700;
+}
+
+.fc-title { font-size: .85rem; color: var(--text); flex: 1; }
+
+.fc-body { padding: 12px 16px; }
+
+.fc-desc {
+    font-size: .845rem;
+    color: var(--muted);
+    font-weight: 300;
+    font-style: italic;
+    line-height: 1.6;
+    margin-bottom: 10px;
+}
+
+.fc-sql {
+    font-family: var(--font-mono);
+    font-size: .74rem;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(34,197,94,.15);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    white-space: pre-wrap;
+    line-height: 1.55;
+    position: relative;
+}
+
+.copy-sql-btn {
+    position: absolute;
+    top: 8px; right: 8px;
+    font-family: var(--font-mono);
+    font-size: .6rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 3px;
+    padding: 2px 8px;
+    cursor: pointer;
+    transition: color var(--transition);
+}
+
+.copy-sql-btn:hover { color: var(--green); }
+
+/* all good */
+.all-good {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    background: var(--green-dim);
+    border: 1px solid rgba(34,197,94,.2);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    color: var(--green);
+}
+
+.all-good::before { content: "[OK]"; }
+
+/* existing index list */
+.idx-list { display: flex; flex-direction: column; gap: 6px; }
+
+.idx-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 14px;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+}
+
+.idx-item.idx-redundant { border-color: rgba(251,191,36,.2); }
+.idx-item.idx-good      { border-color: rgba(34,197,94,.15); }
+
+.idx-badge {
+    font-size: .6rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    border-radius: 3px;
+    padding: 2px 7px;
+    flex-shrink: 0;
+}
+
+.idx-redundant .idx-badge { background: var(--yellow-dim); color: var(--yellow); }
+.idx-good      .idx-badge { background: var(--green-dim);  color: var(--green); }
+
+.idx-text { color: var(--text); flex: 1; }
+.idx-note { font-size: .7rem; color: var(--muted); margin-top: 2px; font-style: italic; }
+
+/* info */
+.info-section {
+    padding: 36px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .15s ease both;
+}
+
+.info-section h2 { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 14px; }
+.info-section p  { font-size: .875rem; color: var(--muted); font-weight: 300; margin-bottom: 10px; max-width: 600px; }
+.info-section ul { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.info-section ul li { display: flex; gap: 10px; font-family: var(--font-mono); font-size: .76rem; color: var(--text); }
+.info-section ul li::before { content: "->"; color: var(--accent); flex-shrink: 0; }
+
+footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+footer p { font-family: var(--font-mono); font-size: .68rem; color: var(--muted); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 480px) {
+    .tool-card { padding: 18px; }
+    .summary-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+
 </head>
 <body>
-<div class='container'>
-<h1>MySQL Index Analyzer</h1>
-<textarea id='input'></textarea>
-<input id='value' placeholder='Optional metric'>
-<button onclick='run()'>Run</button>
-<div id='res' class='result'></div>
+
+<nav class="wrapper">
+    <a href="/mysql-tools/">MySQL Tools</a>
+</nav>
+
+<div class="wrapper">
+
+<header>
+    <div class="header-chip">Index Analyzer</div>
+    <h1>MySQL <span class="acc">Index</span> Analyzer</h1>
+    <p>Paste a MySQL query (and optionally your CREATE TABLE schema) to detect missing indexes, redundant indexes, and get ready-to-run <code style="font-family:var(--font-mono);font-size:.85em;color:var(--purple);background:rgba(167,139,250,.08);padding:1px 6px;border-radius:3px">ALTER TABLE</code> statements.</p>
+</header>
+
+<div class="tool-card">
+
+
+<div class="samples-row">
+    <span style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);align-self:center">Samples:</span>
+    <button class="sample-btn" onclick="loadSample('simple')">WHERE filter</button>
+    <button class="sample-btn" onclick="loadSample('join')">JOIN query</button>
+    <button class="sample-btn" onclick="loadSample('order')">ORDER + LIMIT</button>
+    <button class="sample-btn" onclick="loadSample('schema')">Query + Schema</button>
+    <button class="sample-btn" onclick="loadSample('redundant')">Redundant indexes</button>
 </div>
-<script src='script.js'></script>
+
+<div class="editor-label"><span class="dot dot-query"></span>SQL Query</div>
+<div class="editor-wrap">
+    <textarea id="queryInput" style="min-height:140px" placeholder="-- Paste your SELECT, UPDATE, or DELETE query here...
+
+
+SELECT * FROM orders WHERE user_id = ? AND status = ‘pending’ ORDER BY created_at DESC LIMIT 20;”></textarea>
+</div>
+
+
+<div class="editor-label"><span class="dot dot-schema"></span>CREATE TABLE Schema <span style="color:var(--muted);font-size:.9em;font-family:var(--font-display);font-style:italic;text-transform:none;letter-spacing:0">(optional — paste to detect redundant indexes)</span></div>
+<div class="editor-wrap schema-wrap">
+    <textarea id="schemaInput" style="min-height:120px" placeholder="-- Optional: paste your CREATE TABLE statement to analyze existing indexes
+
+CREATE TABLE orders (
+id bigint PRIMARY KEY,
+user_id bigint NOT NULL,
+status varchar(20),
+created_at timestamp,
+INDEX idx_user (user_id)
+);”></textarea>
+</div>
+
+<button class="btn-run" onclick="analyze()">Analyze Indexes</button>
+
+<div id="result"></div>
+
+
+</div>
+
+<div class="info-section">
+    <h2>Index Optimization Rules</h2>
+    <p>These are the principles the analyzer applies to find missing and redundant indexes.</p>
+    <ul>
+        <li>WHERE equality columns should be the first columns in a composite index</li>
+        <li>Range columns (BETWEEN, &gt;, &lt;, LIKE) go after equality columns in the index</li>
+        <li>ORDER BY columns can be included in the index after WHERE columns to avoid filesort</li>
+        <li>A covering index includes all columns in SELECT to avoid row fetches (Using index)</li>
+        <li>An index on (a) is made redundant by an index on (a, b) for equality lookups</li>
+        <li>JOIN keys need indexes on the foreign key column of the joined table</li>
+        <li>Low-cardinality columns (status, boolean flags) are weak leading index columns</li>
+    </ul>
+</div>
+
+</div>
+
+<footer class="wrapper">
+    <p>MySQL Tools -- Index Analyzer</p>
+</footer>
+
+<script>
+var SAMPLES = {
+    simple: {
+        query:  "SELECT id, user_id, total, status, created_at\nFROM orders\nWHERE user_id = ?\n  AND status = 'pending'\n  AND created_at > NOW() - INTERVAL 30 DAY\nORDER BY created_at DESC\nLIMIT 20;",
+        schema: ""
+    },
+    join: {
+        query:  "SELECT u.name, u.email, o.id AS order_id, o.total, o.status\nFROM users u\nINNER JOIN orders o ON o.user_id = u.id\nINNER JOIN order_items oi ON oi.order_id = o.id\nWHERE u.active = 1\n  AND o.status IN ('pending', 'processing')\n  AND oi.product_id = ?\nORDER BY o.created_at DESC;",
+        schema: ""
+    },
+    order: {
+        query:  "SELECT id, product_id, qty, price\nFROM order_items\nWHERE order_id = ?\n  AND qty > 0\nORDER BY price DESC\nLIMIT 10;",
+        schema: ""
+    },
+    schema: {
+        query:  "SELECT id, email, name, created_at\nFROM users\nWHERE email = ?\n  AND active = 1\nORDER BY created_at DESC\nLIMIT 1;",
+        schema: "CREATE TABLE users (\n  id bigint unsigned NOT NULL AUTO_INCREMENT,\n  email varchar(255) NOT NULL,\n  name varchar(100),\n  active tinyint(1) DEFAULT 1,\n  created_at timestamp DEFAULT CURRENT_TIMESTAMP,\n  PRIMARY KEY (id),\n  INDEX idx_active (active)\n) ENGINE=InnoDB;"
+    },
+    redundant: {
+        query:  "SELECT * FROM products WHERE category_id = ? AND price > 10 ORDER BY name;",
+        schema: "CREATE TABLE products (\n  id int PRIMARY KEY,\n  category_id int NOT NULL,\n  name varchar(255),\n  price decimal(10,2),\n  active tinyint(1),\n  INDEX idx_cat (category_id),\n  INDEX idx_cat_price (category_id, price),\n  INDEX idx_name (name),\n  INDEX idx_active (active),\n  INDEX idx_active2 (active)\n);"
+    }
+};
+
+function loadSample(key) {
+    document.getElementById("queryInput").value  = SAMPLES[key].query;
+    document.getElementById("schemaInput").value = SAMPLES[key].schema;
+}
+
+// ── Helpers ──────────────────────────────────────────────
+function cleanIdent(s) {
+    return s.replace(/[`'"]/g,"").trim().toLowerCase();
+}
+
+function copySQL(btn, code) {
+    navigator.clipboard.writeText(code)
+        .then(function() { btn.textContent = "Copied!"; setTimeout(function() { btn.textContent = "Copy"; }, 1500); })
+        .catch(function() {});
+}
+
+// ── Parse SELECT columns ──────────────────────────────────
+function parseSelectCols(query) {
+    var m = query.match(/SELECT\s+([\s\S]+?)\s+FROM\s/i);
+    if (!m) { return []; }
+    var colStr = m[1];
+    if (colStr.trim() === "*") { return ["*"]; }
+    return colStr.split(",").map(function(c) {
+        var p = c.trim().split(/\s+AS\s+|\s+/i);
+        var col = p[0].trim();
+        if (col.includes(".")) { col = col.split(".")[1]; }
+        return cleanIdent(col);
+    }).filter(Boolean);
+}
+
+// ── Parse FROM / JOIN tables ──────────────────────────────
+function parseTables(query) {
+    var tables = {};
+    // FROM
+    var fromM = query.match(/FROM\s+`?(\w+)`?(?:\s+(?:AS\s+)?`?(\w+)`?)?/i);
+    if (fromM) {
+        var alias = fromM[2] || fromM[1];
+        tables[alias.toLowerCase()] = fromM[1].toLowerCase();
+    }
+    // JOINs
+    var joinRe = /(?:INNER|LEFT|RIGHT|FULL|CROSS)?\s*JOIN\s+`?(\w+)`?(?:\s+(?:AS\s+)?`?(\w+)`?)?/gi;
+    var jm;
+    while ((jm = joinRe.exec(query)) !== null) {
+        var jalias = jm[2] || jm[1];
+        tables[jalias.toLowerCase()] = jm[1].toLowerCase();
+    }
+    return tables;
+}
+
+// ── Parse WHERE conditions ────────────────────────────────
+function parseWhereColumns(query) {
+    var m = query.match(/WHERE\s+([\s\S]+?)(?:\s+ORDER BY|\s+GROUP BY|\s+HAVING|\s+LIMIT|;|$)/i);
+    if (!m) { return []; }
+    var whereStr = m[1];
+    var cols = [];
+    var eqRe  = /(\w+(?:\.\w+)?)\s*(?:=|IN\s*\(|IS\s+(?:NOT\s+)?NULL)/gi;
+    var rngRe = /(\w+(?:\.\w+)?)\s*(?:>|<|>=|<=|!=|<>|BETWEEN|LIKE)/gi;
+    var em, rm;
+    while ((em = eqRe.exec(whereStr)) !== null) {
+        var col = em[1].includes(".") ? em[1].split(".")[1] : em[1];
+        cols.push({ col: cleanIdent(col), type: "eq" });
+    }
+    while ((rm = rngRe.exec(whereStr)) !== null) {
+        var col2 = rm[1].includes(".") ? rm[1].split(".")[1] : rm[1];
+        if (!cols.find(function(c) { return c.col === cleanIdent(col2); })) {
+            cols.push({ col: cleanIdent(col2), type: "range" });
+        }
+    }
+    return cols;
+}
+
+// ── Parse ORDER BY ────────────────────────────────────────
+function parseOrderBy(query) {
+    var m = query.match(/ORDER\s+BY\s+([\s\S]+?)(?:\s+LIMIT|;|$)/i);
+    if (!m) { return []; }
+    return m[1].split(",").map(function(c) {
+        var parts = c.trim().split(/\s+/);
+        var col = parts[0];
+        if (col.includes(".")) { col = col.split(".")[1]; }
+        return cleanIdent(col);
+    }).filter(Boolean);
+}
+
+// ── Parse JOIN conditions ─────────────────────────────────
+function parseJoinKeys(query) {
+    var keys = [];
+    var onRe = /ON\s+(\w+(?:\.\w+)?)\s*=\s*(\w+(?:\.\w+)?)/gi;
+    var m;
+    while ((m = onRe.exec(query)) !== null) {
+        [m[1], m[2]].forEach(function(side) {
+            if (side.includes(".")) {
+                keys.push({ alias: side.split(".")[0].toLowerCase(), col: cleanIdent(side.split(".")[1]) });
+            }
+        });
+    }
+    return keys;
+}
+
+// ── Parse CREATE TABLE existing indexes ──────────────────
+function parseExistingIndexes(schema) {
+    var indexes = [];
+    if (!schema.trim()) { return indexes; }
+
+    // PRIMARY KEY
+    var pkM = schema.match(/PRIMARY\s+KEY\s*\(([^)]+)\)/i);
+    if (pkM) {
+        indexes.push({ name: "PRIMARY", cols: pkM[1].split(",").map(cleanIdent), type: "primary" });
+    }
+
+    // UNIQUE KEY / INDEX / KEY
+    var idxRe = /(?:(UNIQUE)\s+)?(?:KEY|INDEX)\s+`?(\w+)`?\s*\(([^)]+)\)/gi;
+    var m;
+    while ((m = idxRe.exec(schema)) !== null) {
+        var unique = !!m[1];
+        var name   = m[2];
+        var cols   = m[3].split(",").map(function(c) { return cleanIdent(c.replace(/\(\d+\)/, "")); });
+        indexes.push({ name: name, cols: cols, type: unique ? "unique" : "index" });
+    }
+
+    // inline UNIQUE column
+    var uniqColRe = /`?(\w+)`?\s+\w[\w(),\s]*UNIQUE/gi;
+    while ((m = uniqColRe.exec(schema)) !== null) {
+        var col = cleanIdent(m[1]);
+        if (!indexes.find(function(idx) { return idx.cols[0] === col; })) {
+            indexes.push({ name: "unique_" + col, cols: [col], type: "unique" });
+        }
+    }
+
+    return indexes;
+}
+
+// ── Parse main table name ─────────────────────────────────
+function parseMainTable(schema, query) {
+    if (schema.trim()) {
+        var m = schema.match(/CREATE\s+TABLE\s+(?:IF\s+NOT\s+EXISTS\s+)?`?(\w+)`?/i);
+        if (m) { return m[1]; }
+    }
+    var qm = query.match(/FROM\s+`?(\w+)`?/i);
+    return qm ? qm[1] : "table_name";
+}
+
+// ── Detect redundant indexes ──────────────────────────────
+function findRedundant(indexes) {
+    var redundant = [];
+    for (var i = 0; i < indexes.length; i++) {
+        for (var j = 0; j < indexes.length; j++) {
+            if (i === j) { continue; }
+            var a = indexes[i];
+            var b = indexes[j];
+            if (a.type === "primary" || b.type === "primary") { continue; }
+            // a is redundant if b's prefix covers a's columns
+            var aStr = a.cols.join(",");
+            var bPrefix = b.cols.slice(0, a.cols.length).join(",");
+            if (aStr === bPrefix && a.cols.length < b.cols.length) {
+                if (!redundant.find(function(r) { return r.name === a.name; })) {
+                    redundant.push({ name: a.name, cols: a.cols, supersededBy: b.name, superCols: b.cols });
+                }
+            }
+            // exact duplicate
+            if (aStr === b.cols.join(",") && a.name !== b.name && i < j) {
+                redundant.push({ name: b.name, cols: b.cols, supersededBy: a.name, superCols: a.cols, duplicate: true });
+            }
+        }
+    }
+    return redundant;
+}
+
+// ── Main analysis ─────────────────────────────────────────
+function analyze() {
+    var query  = document.getElementById("queryInput").value;
+    var schema = document.getElementById("schemaInput").value;
+
+    if (!query.trim()) {
+        alert("Please paste a MySQL query.");
+        return;
+    }
+
+    var tables       = parseTables(query);
+    var whereCols    = parseWhereColumns(query);
+    var orderCols    = parseOrderBy(query);
+    var joinKeys     = parseJoinKeys(query);
+    var selectCols   = parseSelectCols(query);
+    var mainTable    = parseMainTable(schema, query);
+    var existingIdxs = parseExistingIndexes(schema);
+
+    var findings     = [];
+    var alters       = [];
+
+    // ── Check existing index coverage ──
+    var existingLeadCols = existingIdxs.map(function(idx) { return idx.cols[0]; });
+
+    // ── WHERE equality columns without index ──
+    var eqCols = whereCols.filter(function(c) { return c.type === "eq"; }).map(function(c) { return c.col; });
+    var rngCols = whereCols.filter(function(c) { return c.type === "range"; }).map(function(c) { return c.col; });
+
+    // Filter out already indexed
+    var unindexedEq  = eqCols.filter(function(c) {
+        return c !== "id" && !existingIdxs.find(function(idx) { return idx.cols[0] === c; });
+    });
+    var unindexedRng = rngCols.filter(function(c) {
+        return c !== "id" && !existingIdxs.find(function(idx) { return idx.cols.indexOf(c) !== -1; });
+    });
+
+    // Build optimal composite index suggestion
+    if (unindexedEq.length > 0 || unindexedRng.length > 0) {
+        // Composite: eq cols first, then range, then order
+        var compCols = [];
+        unindexedEq.forEach(function(c)  { if (compCols.indexOf(c) === -1) { compCols.push(c); } });
+        unindexedRng.forEach(function(c) { if (compCols.indexOf(c) === -1) { compCols.push(c); } });
+        orderCols.forEach(function(c) {
+            if (compCols.indexOf(c) === -1 && !existingIdxs.find(function(idx) { return idx.cols[0] === c; })) {
+                compCols.push(c);
+            }
+        });
+
+        var idxName = "idx_" + compCols.slice(0, 3).join("_");
+        var alterSQL = "ALTER TABLE `" + mainTable + "` ADD INDEX `" + idxName + "` (" + compCols.map(function(c) { return "`" + c + "`"; }).join(", ") + ");";
+        alters.push(alterSQL);
+
+        var compDesc = "";
+        if (unindexedEq.length > 0) {
+            compDesc += "Equality columns " + unindexedEq.map(function(c) { return "`" + c + "`"; }).join(", ") + " have no index. ";
+        }
+        if (unindexedRng.length > 0) {
+            compDesc += "Range column" + (unindexedRng.length > 1 ? "s" : "") + " " + unindexedRng.map(function(c) { return "`" + c + "`"; }).join(", ") + " added after equality columns for range access. ";
+        }
+        if (orderCols.length > 0) {
+            compDesc += "ORDER BY column" + (orderCols.length > 1 ? "s" : "") + " included to avoid filesort.";
+        }
+
+        findings.push({
+            cls: "fc-critical",
+            badge: "Missing Index",
+            table: mainTable,
+            title: "Add composite index on (" + compCols.join(", ") + ")",
+            desc: compDesc.trim(),
+            sql: alterSQL
+        });
+    }
+
+    // ── ORDER BY without supporting index ──
+    if (orderCols.length > 0 && unindexedEq.length === 0) {
+        var orderUncovered = orderCols.filter(function(c) {
+            return !existingIdxs.find(function(idx) {
+                return idx.cols[0] === c || (eqCols.length > 0 && idx.cols[0] === eqCols[0] && idx.cols.indexOf(c) !== -1);
+            });
+        });
+        if (orderUncovered.length > 0) {
+            var ordIdx   = "idx_" + orderUncovered[0];
+            var ordAlter = "ALTER TABLE `" + mainTable + "` ADD INDEX `" + ordIdx + "` (" + orderUncovered.map(function(c) { return "`" + c + "`"; }).join(", ") + ");";
+            alters.push(ordAlter);
+            findings.push({
+                cls: "fc-high",
+                badge: "Filesort Risk",
+                table: mainTable,
+                title: "ORDER BY (" + orderUncovered.join(", ") + ") has no supporting index",
+                desc: "Without an index on the ORDER BY column(s), MySQL must sort the result set in memory or on disk. On large result sets this is expensive. Add the ORDER BY columns to the index after equality columns.",
+                sql: ordAlter
+            });
+        }
+    }
+
+    // ── JOIN key analysis ──
+    var tableNames = Object.values(tables);
+    joinKeys.forEach(function(jk) {
+        var resolvedTable = tables[jk.alias] || jk.alias;
+        if (resolvedTable === mainTable.toLowerCase()) { return; } // skip main table FK
+        var col = jk.col;
+        if (col === "id") { return; } // assume id is PK
+        var hasIdx = existingIdxs.find(function(idx) { return idx.cols[0] === col; });
+        if (!hasIdx) {
+            var jAlter = "ALTER TABLE `" + resolvedTable + "` ADD INDEX `idx_fk_" + col + "` (`" + col + "`);";
+            if (alters.indexOf(jAlter) === -1) {
+                alters.push(jAlter);
+                findings.push({
+                    cls: "fc-critical",
+                    badge: "JOIN No Index",
+                    table: resolvedTable,
+                    title: "JOIN key `" + col + "` has no index on " + resolvedTable,
+                    desc: "The JOIN condition uses `" + col + "` on `" + resolvedTable + "` but no index covers this column. Without this index MySQL performs a full table scan for every row of the driving table, causing O(n*m) performance.",
+                    sql: jAlter
+                });
+            }
+        }
+    });
+
+    // ── Redundant indexes ──
+    var redundant = findRedundant(existingIdxs);
+    redundant.forEach(function(r) {
+        var dropSQL = "ALTER TABLE `" + mainTable + "` DROP INDEX `" + r.name + "`;  -- superseded by " + r.supersededBy;
+        findings.push({
+            cls: "fc-high",
+            badge: r.duplicate ? "Duplicate Index" : "Redundant Index",
+            table: mainTable,
+            title: "`" + r.name + "` (" + r.cols.join(", ") + ") is " + (r.duplicate ? "a duplicate of" : "a prefix of") + " `" + r.supersededBy + "`",
+            desc: (r.duplicate
+                ? "Two indexes cover exactly the same columns. Drop one to reduce write overhead."
+                : "Index `" + r.name + "` covers only (" + r.cols.join(", ") + "). Index `" + r.supersededBy + "` covers (" + r.superCols.join(", ") + ") and satisfies all queries that `" + r.name + "` would handle. The prefix index adds write overhead for every INSERT/UPDATE without providing any additional read benefit."),
+            sql: dropSQL
+        });
+    });
+
+    // ── Covering index suggestion ──
+    if (selectCols.length > 0 && selectCols[0] !== "*" && selectCols.length <= 5) {
+        var covCols = [];
+        eqCols.forEach(function(c) { if (covCols.indexOf(c) === -1) { covCols.push(c); } });
+        rngCols.forEach(function(c) { if (covCols.indexOf(c) === -1) { covCols.push(c); } });
+        orderCols.forEach(function(c) { if (covCols.indexOf(c) === -1) { covCols.push(c); } });
+        selectCols.forEach(function(c) { if (covCols.indexOf(c) === -1 && c !== "id") { covCols.push(c); } });
+
+        if (covCols.length > 0 && covCols.length <= 6 && (unindexedEq.length > 0 || unindexedRng.length > 0)) {
+            var covName  = "idx_covering_" + mainTable;
+            var covAlter = "-- Covering index (optional -- eliminates row fetches):\nALTER TABLE `" + mainTable + "` ADD INDEX `" + covName + "` (" + covCols.map(function(c) { return "`" + c + "`"; }).join(", ") + ");";
+            findings.push({
+                cls: "fc-medium",
+                badge: "Covering Index",
+                table: mainTable,
+                title: "Optional covering index to eliminate row fetches",
+                desc: "A covering index includes all columns in the SELECT list. MySQL can satisfy the entire query from the index without reading the actual rows (EXPLAIN will show 'Using index'). This is the most efficient access pattern for read-heavy workloads.",
+                sql: covAlter
+            });
+        }
+    }
+
+    // ── No issues ──
+    if (findings.length === 0 && existingIdxs.length > 0) {
+        findings.push({
+            cls: "fc-good",
+            badge: "All Covered",
+            table: mainTable,
+            title: "All WHERE, JOIN, and ORDER BY columns appear to be indexed",
+            desc: "Based on the query and schema provided, the current indexes should cover this query efficiently. Run EXPLAIN to confirm.",
+            sql: null
+        });
+    }
+
+    // ── Summary ──
+    var critCount = findings.filter(function(f) { return f.cls === "fc-critical"; }).length;
+    var highCount = findings.filter(function(f) { return f.cls === "fc-high"; }).length;
+    var medCount  = findings.filter(function(f) { return f.cls === "fc-medium"; }).length;
+    var tableCount = Object.keys(tables).length;
+
+    var summaryHTML =
+        "<div class=\"summary-grid\">" +
+            "<div class=\"sum-card " + (critCount > 0 ? "sc-red" : "sc-green") + "\"><span class=\"sc-label\">Critical</span><span class=\"sc-value\">" + critCount + "</span><span class=\"sc-sub\">missing indexes</span></div>" +
+            "<div class=\"sum-card " + (highCount > 0 ? "sc-yellow" : "sc-green") + "\"><span class=\"sc-label\">Warnings</span><span class=\"sc-value\">" + highCount + "</span><span class=\"sc-sub\">redundant/filesort</span></div>" +
+            "<div class=\"sum-card sc-blue\"><span class=\"sc-label\">Tables</span><span class=\"sc-value\">" + tableCount + "</span><span class=\"sc-sub\">in query</span></div>" +
+            "<div class=\"sum-card sc-blue\"><span class=\"sc-label\">Existing</span><span class=\"sc-value\">" + existingIdxs.length + "</span><span class=\"sc-sub\">indexes (schema)</span></div>" +
+        "</div>";
+
+    // Findings
+    var findingsHTML = findings.length === 0
+        ? "<div class=\"all-good\">No indexes to add. Query looks well-indexed based on available information.</div>"
+        : "<div class=\"finding-list\">" +
+            findings.map(function(f, fi) {
+                return "<div class=\"finding-card " + f.cls + "\">" +
+                    "<div class=\"fc-header\">" +
+                        "<span class=\"fc-badge\">" + f.badge + "</span>" +
+                        "<span class=\"fc-table\">" + f.table + "</span>" +
+                        "<span class=\"fc-title\">" + f.title + "</span>" +
+                    "</div>" +
+                    "<div class=\"fc-body\">" +
+                        "<div class=\"fc-desc\">" + f.desc + "</div>" +
+                        (f.sql ? "<div class=\"fc-sql\" id=\"sql_" + fi + "\">" + f.sql + "<button class=\"copy-sql-btn\" onclick=\"copySQL(this, document.getElementById('sql_" + fi + "').innerText.split('\\n').filter(function(l){return !l.startsWith('--')}).join('\\n').trim())\">Copy</button></div>" : "") +
+                    "</div>" +
+                "</div>";
+            }).join("") +
+          "</div>";
+
+    // Existing indexes panel
+    var existingHTML = "";
+    if (existingIdxs.length > 0) {
+        var redNames = redundant.map(function(r) { return r.name; });
+        existingHTML =
+            "<div class=\"divider\"></div>" +
+            "<div class=\"section-title\">Existing Indexes (from schema)</div>" +
+            "<div class=\"idx-list\">" +
+            existingIdxs.map(function(idx) {
+                var isRed = redNames.indexOf(idx.name) !== -1;
+                return "<div class=\"idx-item " + (isRed ? "idx-redundant" : "idx-good") + "\">" +
+                    "<span class=\"idx-badge\">" + (isRed ? "Redundant" : idx.type.toUpperCase()) + "</span>" +
+                    "<div>" +
+                        "<div class=\"idx-text\">" + idx.name + " (" + idx.cols.join(", ") + ")</div>" +
+                        (isRed ? "<div class=\"idx-note\">Consider dropping this index to reduce write overhead</div>" : "") +
+                    "</div>" +
+                "</div>";
+            }).join("") +
+            "</div>";
+    }
+
+    var resultEl = document.getElementById("result");
+    resultEl.innerHTML =
+        "<div class=\"divider\"></div>" +
+        summaryHTML +
+        "<div class=\"divider\"></div>" +
+        "<div class=\"section-title\">Index Recommendations</div>" +
+        findingsHTML +
+        existingHTML;
+
+    resultEl.classList.add("visible");
+    resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+</script>
+
 </body>
 </html>
