@@ -1,19 +1,826 @@
-<html>
+<!DOCTYPE html>
+
+<html lang="en">
 <head>
-<meta charset='UTF-8'>
-<title>MySQL Performance Benchmark</title>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
-<link rel='stylesheet' href='styles.css'>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+<title>MySQL Performance Benchmark Tool – Estimate Query Throughput & Latency</title>
+<meta name="description" content="Estimate MySQL query throughput, latency, and performance under different workloads. Simulate read/write ratios, index usage, connection pool size, and InnoDB buffer pool configuration.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg:         #020617;
+    --surface:    #080f1e;
+    --surface-2:  #0d1829;
+    --border:     #162035;
+    --accent:     #f59e0b;
+    --accent-2:   #fbbf24;
+    --accent-dim: rgba(245,158,11,.07);
+    --green:      #22c55e;
+    --green-dim:  rgba(34,197,94,.08);
+    --yellow:     #fbbf24;
+    --yellow-dim: rgba(251,191,36,.07);
+    --red:        #ef4444;
+    --red-dim:    rgba(239,68,68,.07);
+    --blue:       #38bdf8;
+    --blue-dim:   rgba(56,189,248,.07);
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+
+    --font-display: "Space Grotesk", sans-serif;
+    --font-mono:    "Space Mono", monospace;
+    --radius:    8px;
+    --radius-lg: 16px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(245,158,11,.012) 40px, rgba(245,158,11,.012) 41px);
+    pointer-events: none; z-index: 0;
+}
+
+.wrapper {
+    position: relative; z-index: 1;
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+}
+
+nav {
+    position: relative; z-index: 2;
+    padding: 18px 24px;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+nav a {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+}
+
+nav a:hover { color: var(--accent); }
+nav a::before { content: "<-"; }
+
+header {
+    padding: 36px 0 32px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+}
+
+.header-chip {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(245,158,11,.2);
+    border-radius: 4px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+
+header h1 {
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+}
+
+header h1 .acc { color: var(--accent); }
+header p { font-size: .9rem; color: var(--muted); font-weight: 300; max-width: 520px; }
+
+.tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--accent);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin: 32px 0;
+    animation: fadeUp .5s .08s ease both;
+}
+
+/* SECTION LABELS */
+.section-label {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+    margin-top: 24px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.section-label::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+}
+
+.section-label:first-child { margin-top: 0; }
+
+/* PARAMS GRID */
+.params-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-bottom: 6px;
+}
+
+.param-group { display: flex; flex-direction: column; gap: 6px; }
+
+.param-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.param-label {
+    font-family: var(--font-mono);
+    font-size: .66rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.param-val {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    color: var(--accent);
+    font-weight: 700;
+}
+
+input[type="range"] {
+    width: 100%;
+    height: 4px;
+    -webkit-appearance: none;
+    appearance: none;
+    background: var(--border);
+    border-radius: 2px;
+    outline: none;
+    cursor: pointer;
+}
+
+input[type="range"]::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    cursor: pointer;
+    transition: transform var(--transition);
+}
+
+input[type="range"]::-webkit-slider-thumb:hover { transform: scale(1.2); }
+input[type="range"]::-moz-range-thumb {
+    width: 14px; height: 14px;
+    border-radius: 50%;
+    background: var(--accent);
+    border: none;
+}
+
+.param-hint { font-size: .7rem; color: var(--muted); font-style: italic; }
+
+/* RADIO GROUP */
+.radio-group {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 6px;
+}
+
+.radio-btn {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .04em;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+}
+
+.radio-btn.active { color: var(--accent); border-color: rgba(245,158,11,.4); background: var(--accent-dim); }
+.radio-btn:hover:not(.active) { color: var(--text); border-color: var(--border); }
+
+/* BUTTON */
+.btn-run {
+    width: 100%;
+    background: var(--accent);
+    color: #020617;
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px 24px;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    margin-top: 24px;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn-run:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(245,158,11,.3); }
+.btn-run:active { transform: translateY(0); }
+
+/* RESULTS */
+#result { margin-top: 24px; display: none; animation: fadeUp .35s ease both; }
+#result.visible { display: block; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* score row */
+.score-row {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.score-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.sc-label { font-family: var(--font-mono); font-size: .58rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+.sc-value { font-family: var(--font-mono); font-size: 1.5rem; color: #fff; line-height: 1.1; }
+.sc-sub   { font-size: .68rem; color: var(--muted); font-style: italic; }
+
+.sc-good   { border-left: 3px solid var(--green); }
+.sc-warn   { border-left: 3px solid var(--yellow); }
+.sc-danger { border-left: 3px solid var(--red); }
+.sc-info   { border-left: 3px solid var(--blue); }
+
+/* throughput bar */
+.tput-section { margin-bottom: 20px; }
+
+.tput-title {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 10px;
+}
+
+.tput-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+
+.tput-label {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--muted);
+    width: 120px;
+    flex-shrink: 0;
+}
+
+.tput-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: var(--border);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.tput-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width .6s cubic-bezier(.4,0,.2,1);
+}
+
+.fill-green  { background: linear-gradient(90deg, #16a34a, var(--green)); }
+.fill-yellow { background: linear-gradient(90deg, #b45309, var(--yellow)); }
+.fill-red    { background: linear-gradient(90deg, #b91c1c, var(--red)); }
+.fill-blue   { background: linear-gradient(90deg, #0369a1, var(--blue)); }
+.fill-accent { background: linear-gradient(90deg, #b45309, var(--accent)); }
+
+.tput-val {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--text);
+    width: 80px;
+    text-align: right;
+    flex-shrink: 0;
+}
+
+/* config comparison */
+.compare-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: 4px;
+}
+
+.cmp-panel {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.cmp-panel.cmp-current { border-color: rgba(245,158,11,.35); }
+.cmp-panel.cmp-better  { border-color: rgba(34,197,94,.3); }
+
+.cmp-title {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+}
+
+.cmp-current .cmp-title { color: var(--accent); }
+.cmp-better  .cmp-title { color: var(--green); }
+.cmp-panel:not(.cmp-current):not(.cmp-better) .cmp-title { color: var(--muted); }
+
+.cmp-qps { font-family: var(--font-mono); font-size: 1.4rem; color: #fff; line-height: 1.1; }
+.cmp-sub  { font-size: .72rem; color: var(--muted); font-style: italic; }
+
+.cmp-delta {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    border-radius: 4px;
+    padding: 2px 8px;
+    width: fit-content;
+}
+
+.delta-up   { color: var(--green);  background: var(--green-dim); }
+.delta-down { color: var(--red);    background: var(--red-dim); }
+.delta-same { color: var(--muted);  background: var(--surface); }
+
+/* bottleneck list */
+.bottleneck-list { display: flex; flex-direction: column; gap: 8px; }
+
+.bottleneck-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 11px 14px;
+    font-size: .845rem;
+}
+
+.bn-critical { border-left: 3px solid var(--red); }
+.bn-warning  { border-left: 3px solid var(--yellow); }
+.bn-info     { border-left: 3px solid var(--blue); }
+
+.bn-icon { font-family: var(--font-mono); font-size: .72rem; flex-shrink: 0; margin-top: 2px; }
+.bn-critical .bn-icon { color: var(--red); }
+.bn-warning  .bn-icon { color: var(--yellow); }
+.bn-info     .bn-icon { color: var(--blue); }
+
+.bn-body { flex: 1; }
+.bn-title { font-family: var(--font-mono); font-size: .78rem; color: var(--text); margin-bottom: 3px; }
+.bn-desc  { font-size: .8rem; color: var(--muted); font-weight: 300; font-style: italic; line-height: 1.5; }
+
+/* info */
+.info-section {
+    padding: 36px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .15s ease both;
+}
+
+.info-section h2 { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 14px; }
+.info-section p  { font-size: .875rem; color: var(--muted); font-weight: 300; margin-bottom: 10px; max-width: 580px; }
+.info-section ul { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.info-section ul li { display: flex; gap: 10px; font-family: var(--font-mono); font-size: .76rem; color: var(--text); }
+.info-section ul li::before { content: "->"; color: var(--accent); flex-shrink: 0; }
+
+footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    max-width: 860px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+footer p { font-family: var(--font-mono); font-size: .68rem; color: var(--muted); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 540px) {
+    .tool-card { padding: 18px; }
+    .params-grid { grid-template-columns: 1fr; }
+    .compare-grid { grid-template-columns: 1fr; }
+    .score-row { grid-template-columns: 1fr 1fr; }
+}
+</style>
+
 </head>
 <body>
-<div class='container'>
-<h1>MySQL Performance Benchmark</h1>
-<textarea id='input'></textarea>
-<input id='value' placeholder='Optional metric'>
-<button onclick='run()'>Run</button>
-<div id='res' class='result'></div>
+
+<nav class="wrapper">
+    <a href="/mysql-tools/">MySQL Tools</a>
+</nav>
+
+<div class="wrapper">
+
+<header>
+    <div class="header-chip">Benchmark Tool</div>
+    <h1>MySQL <span class="acc">Performance</span> Benchmark</h1>
+    <p>Configure your workload parameters and simulate MySQL query throughput, latency, and bottlenecks across different hardware and configuration scenarios.</p>
+</header>
+
+<div class="tool-card">
+
+<!-- WORKLOAD TYPE -->
+<div class="section-label">Workload Type</div>
+<div class="radio-group" id="workloadGroup">
+    <div class="radio-btn active" data-val="read_heavy"   onclick="setRadio(this, 'workload')">Read-heavy (80/20)</div>
+    <div class="radio-btn"        data-val="balanced"     onclick="setRadio(this, 'workload')">Balanced (50/50)</div>
+    <div class="radio-btn"        data-val="write_heavy"  onclick="setRadio(this, 'workload')">Write-heavy (20/80)</div>
+    <div class="radio-btn"        data-val="olap"         onclick="setRadio(this, 'workload')">Analytical (OLAP)</div>
 </div>
-<script src='script.js'></script>
+
+<!-- QUERY TYPE -->
+<div class="section-label">Primary Query Pattern</div>
+<div class="radio-group" id="queryGroup">
+    <div class="radio-btn active" data-val="point"   onclick="setRadio(this, 'query')">Point lookup</div>
+    <div class="radio-btn"        data-val="range"   onclick="setRadio(this, 'query')">Range scan</div>
+    <div class="radio-btn"        data-val="join"    onclick="setRadio(this, 'query')">JOIN query</div>
+    <div class="radio-btn"        data-val="aggr"    onclick="setRadio(this, 'query')">Aggregation</div>
+    <div class="radio-btn"        data-val="insert"  onclick="setRadio(this, 'query')">Bulk INSERT</div>
+</div>
+
+<!-- SLIDERS -->
+<div class="section-label">Hardware &amp; Configuration</div>
+<div class="params-grid">
+
+    <div class="param-group">
+        <div class="param-header">
+            <span class="param-label">Table rows</span>
+            <span class="param-val" id="val_rows">1M</span>
+        </div>
+        <input type="range" id="sl_rows" min="1" max="9" value="4" oninput="updateRows()">
+        <span class="param-hint">Order of magnitude</span>
+    </div>
+
+    <div class="param-group">
+        <div class="param-header">
+            <span class="param-label">Connections</span>
+            <span class="param-val" id="val_conns">50</span>
+        </div>
+        <input type="range" id="sl_conns" min="1" max="500" value="50" oninput="syncVal('sl_conns','val_conns','')">
+        <span class="param-hint">Concurrent connections</span>
+    </div>
+
+    <div class="param-group">
+        <div class="param-header">
+            <span class="param-label">Buffer pool (GB)</span>
+            <span class="param-val" id="val_bp">4</span>
+        </div>
+        <input type="range" id="sl_bp" min="1" max="64" value="4" oninput="syncVal('sl_bp','val_bp','GB')">
+        <span class="param-hint">innodb_buffer_pool_size</span>
+    </div>
+
+    <div class="param-group">
+        <div class="param-header">
+            <span class="param-label">Index coverage %</span>
+            <span class="param-val" id="val_idx">80</span>
+        </div>
+        <input type="range" id="sl_idx" min="0" max="100" value="80" oninput="syncVal('sl_idx','val_idx','%')">
+        <span class="param-hint">% of queries hitting an index</span>
+    </div>
+
+    <div class="param-group">
+        <div class="param-header">
+            <span class="param-label">CPU cores</span>
+            <span class="param-val" id="val_cpu">8</span>
+        </div>
+        <input type="range" id="sl_cpu" min="1" max="64" value="8" oninput="syncVal('sl_cpu','val_cpu','')">
+        <span class="param-hint">Available vCPUs</span>
+    </div>
+
+    <div class="param-group">
+        <div class="param-header">
+            <span class="param-label">Storage type</span>
+            <span class="param-val" id="val_storage">SSD</span>
+        </div>
+        <input type="range" id="sl_storage" min="1" max="3" value="2" oninput="updateStorage()">
+        <span class="param-hint">HDD / SSD / NVMe</span>
+    </div>
+
+</div>
+
+<button class="btn-run" onclick="runBenchmark()">Run Benchmark Simulation</button>
+
+<div id="result"></div>
+
+</div>
+
+<div class="info-section">
+    <h2>How the Simulation Works</h2>
+    <p>The benchmark model applies empirically-derived multipliers for each workload type, query pattern, and hardware configuration to estimate realistic MySQL throughput.</p>
+    <ul>
+        <li>Base QPS derived from InnoDB single-thread performance at the selected storage tier</li>
+        <li>Index miss penalty: each unindexed query scans up to N rows vs a single B-tree lookup</li>
+        <li>Buffer pool hit ratio: data fitting in RAM vs requiring disk I/O</li>
+        <li>Connection overhead: thread scheduler contention above max_connections threshold</li>
+        <li>Write amplification: InnoDB redo log and doublewrite buffer cost for INSERT/UPDATE</li>
+    </ul>
+</div>
+
+</div>
+
+<footer class="wrapper">
+    <p>MySQL Tools -- Performance Benchmark Tool</p>
+</footer>
+
+<script>
+var workloadMode = "read_heavy";
+var queryMode    = "point";
+
+var ROW_LABELS = ["1K","10K","100K","1M","10M","100M","1B","10B","100B"];
+var ROW_VALUES = [1e3, 1e4, 1e5, 1e6, 1e7, 1e8, 1e9, 1e10, 1e11];
+
+var STORAGE_LABELS = ["HDD","SSD","NVMe"];
+var STORAGE_IOPS   = [300, 80000, 500000]; // random IOPS
+
+function setRadio(el, group) {
+    var grpId = group === "workload" ? "workloadGroup" : "queryGroup";
+    document.getElementById(grpId).querySelectorAll(".radio-btn").forEach(function(b) { b.classList.remove("active"); });
+    el.classList.add("active");
+    if (group === "workload") { workloadMode = el.dataset.val; }
+    else                      { queryMode    = el.dataset.val; }
+}
+
+function syncVal(sliderId, labelId, suffix) {
+    var v = document.getElementById(sliderId).value;
+    document.getElementById(labelId).textContent = v + suffix;
+}
+
+function updateRows() {
+    var v = parseInt(document.getElementById("sl_rows").value, 10) - 1;
+    document.getElementById("val_rows").textContent = ROW_LABELS[v];
+}
+
+function updateStorage() {
+    var v = parseInt(document.getElementById("sl_storage").value, 10) - 1;
+    document.getElementById("val_storage").textContent = STORAGE_LABELS[v];
+}
+
+function fmt(n) {
+    if (n >= 1e6) { return (n / 1e6).toFixed(1) + "M"; }
+    if (n >= 1e3) { return (n / 1e3).toFixed(1) + "K"; }
+    return String(Math.round(n));
+}
+
+function fmtMs(ms) {
+    if (ms < 1)    { return (ms * 1000).toFixed(0) + " us"; }
+    if (ms < 1000) { return ms.toFixed(2) + " ms"; }
+    return (ms / 1000).toFixed(2) + " s";
+}
+
+// ── Benchmark model ──────────────────────────────────────
+function calcQPS(conns, bp, idx, cpu, storageIdx, rows, workload, query) {
+    // Base single-thread QPS by storage
+    var baseQPS = [500, 8000, 40000][storageIdx];
+
+    // Query type multiplier
+    var queryMult = { point: 1.0, range: 0.4, join: 0.25, aggr: 0.1, insert: 0.6 }[query] || 0.5;
+
+    // Workload multiplier (writes are more expensive)
+    var workloadMult = { read_heavy: 1.0, balanced: 0.75, write_heavy: 0.5, olap: 0.15 }[workload] || 0.8;
+
+    // Index coverage
+    var idxHit  = idx / 100;
+    var idxMiss = 1 - idxHit;
+    // Index miss penalty: scan rows instead of B-tree lookup
+    var rowsToScan = ROW_VALUES[Math.floor(rows)] || 1e6;
+    var penaltyFactor = idxHit + idxMiss * (1 / Math.max(1, Math.log10(rowsToScan)));
+    penaltyFactor = Math.max(0.01, Math.min(1, penaltyFactor));
+
+    // Buffer pool: estimate hit ratio
+    // Assume data size ~ rows * 100 bytes
+    var dataSize  = rowsToScan * 100;
+    var bpBytes   = bp * 1e9;
+    var hitRatio  = Math.min(1, bpBytes / dataSize);
+    var bpMult    = hitRatio + (1 - hitRatio) * 0.05; // disk access is 20x slower
+
+    // CPU concurrency benefit (diminishing returns)
+    var cpuScale  = Math.min(Math.sqrt(cpu), Math.sqrt(conns));
+
+    // Connection overhead (penalty above practical limit ~4x cpu)
+    var maxPractical = cpu * 4;
+    var connPenalty  = conns <= maxPractical ? 1.0 : Math.max(0.3, maxPractical / conns);
+
+    var qps = baseQPS * queryMult * workloadMult * penaltyFactor * bpMult * cpuScale * connPenalty;
+    return Math.round(qps);
+}
+
+function calcLatency(qps, conns) {
+    if (qps <= 0) { return 9999; }
+    // Little's law: L = lambda * W => W = L / lambda
+    var latencyMs = (conns / qps) * 1000;
+    return latencyMs;
+}
+
+function buildBottlenecks(conns, bp, idx, cpu, storageIdx, rows, workload, query) {
+    var bns = [];
+    var rowsToScan = ROW_VALUES[Math.floor(rows)] || 1e6;
+    var dataSize = rowsToScan * 100;
+    var bpBytes  = bp * 1e9;
+    var hitRatio = Math.min(1, bpBytes / dataSize);
+
+    if (idx < 60) {
+        bns.push({ cls: "bn-critical", icon: "[!]", title: "Low index coverage (" + idx + "%) -- full table scans likely", desc: "Only " + idx + "% of queries hit an index. The remaining " + (100-idx) + "% perform full table scans across " + fmt(rowsToScan) + " rows. This is the highest-impact issue. Use EXPLAIN to find unindexed queries and add targeted indexes." });
+    } else if (idx < 85) {
+        bns.push({ cls: "bn-warning", icon: "[~]", title: "Index coverage at " + idx + "% -- some scans occurring", desc: (100-idx) + "% of queries lack index coverage. Run SHOW STATUS LIKE 'Handler_read%' to identify scan-heavy queries." });
+    }
+
+    if (hitRatio < 0.5) {
+        bns.push({ cls: "bn-critical", icon: "[!]", title: "Buffer pool too small (" + bp + "GB) -- frequent disk I/O", desc: "Your data size (~" + fmt(dataSize) + " bytes) exceeds buffer pool (" + bp + "GB). Only ~" + Math.round(hitRatio*100) + "% of data fits in RAM. Increase innodb_buffer_pool_size to 60-80% of available RAM for a significant performance boost." });
+    } else if (hitRatio < 0.85) {
+        bns.push({ cls: "bn-warning", icon: "[~]", title: "Buffer pool hit ratio ~" + Math.round(hitRatio*100) + "% -- consider increasing", desc: "Increasing buffer pool would bring more data into RAM, reducing disk reads. Target > 95% hit ratio (SHOW STATUS LIKE 'Innodb_buffer_pool_read%')." });
+    }
+
+    if (conns > cpu * 4) {
+        bns.push({ cls: "bn-critical", icon: "[!]", title: "Connections (" + conns + ") exceed optimal for " + cpu + " CPUs", desc: "MySQL thread scheduler contention starts above ~" + (cpu*4) + " connections on " + cpu + " cores. Consider a connection pooler (ProxySQL, PgBouncer) to multiplex connections. Set max_connections = " + (cpu * 4) + " as a starting point." });
+    }
+
+    if (storageIdx === 0 && (workload === "write_heavy" || query === "insert")) {
+        bns.push({ cls: "bn-critical", icon: "[!]", title: "HDD storage with write-heavy workload", desc: "HDD random write IOPS (~300) is a severe bottleneck for write-heavy MySQL workloads. Upgrading to SSD provides ~267x more random IOPS (80K) and dramatically reduces write latency." });
+    }
+
+    if (query === "join" && idx < 90) {
+        bns.push({ cls: "bn-warning", icon: "[~]", title: "JOIN queries require indexes on all join keys", desc: "For JOIN performance, every column in ON clauses needs a covering index. Without this, each join performs a full scan of the joined table. Check EXPLAIN for 'ALL' type on joined tables." });
+    }
+
+    if (workload === "olap" && conns > 10) {
+        bns.push({ cls: "bn-info", icon: "[i]", title: "OLAP workload with many connections", desc: "Analytical queries benefit from fewer, longer connections rather than many concurrent short ones. Consider a read replica or columnar store (ClickHouse, DuckDB) for heavy aggregation." });
+    }
+
+    if (bns.length === 0) {
+        bns.push({ cls: "bn-info", icon: "[v]", title: "Configuration looks well-tuned for this workload", desc: "Index coverage, buffer pool, and connection count are all within recommended ranges. Monitor SHOW GLOBAL STATUS for runtime bottleneck detection." });
+    }
+
+    return bns;
+}
+
+function runBenchmark() {
+    var conns      = parseInt(document.getElementById("sl_conns").value, 10);
+    var bp         = parseInt(document.getElementById("sl_bp").value, 10);
+    var idx        = parseInt(document.getElementById("sl_idx").value, 10);
+    var cpu        = parseInt(document.getElementById("sl_cpu").value, 10);
+    var storageIdx = parseInt(document.getElementById("sl_storage").value, 10) - 1;
+    var rowsIdx    = parseInt(document.getElementById("sl_rows").value, 10) - 1;
+
+    var qps     = calcQPS(conns, bp, idx, cpu, storageIdx, rowsIdx, workloadMode, queryMode);
+    var latency = calcLatency(qps, conns);
+    var rowsToScan = ROW_VALUES[rowsIdx] || 1e6;
+    var dataSize = rowsToScan * 100;
+    var bpBytes  = bp * 1e9;
+    var hitRatio = Math.min(1, bpBytes / dataSize);
+
+    // Alternatives: better index, bigger BP, NVMe
+    var qpsBetterIdx = calcQPS(conns, bp, Math.min(idx + 20, 100), cpu, storageIdx, rowsIdx, workloadMode, queryMode);
+    var qpsBiggerBP  = calcQPS(conns, Math.min(bp * 4, 64), idx, cpu, storageIdx, rowsIdx, workloadMode, queryMode);
+    var qpsNvme      = calcQPS(conns, bp, idx, cpu, 2, rowsIdx, workloadMode, queryMode);
+
+    // Score cards
+    var qpsCls  = qps >= 5000 ? "sc-good" : qps >= 500 ? "sc-warn" : "sc-danger";
+    var latCls  = latency < 5 ? "sc-good" : latency < 50 ? "sc-warn" : "sc-danger";
+    var hitCls  = hitRatio > 0.9 ? "sc-good" : hitRatio > 0.6 ? "sc-warn" : "sc-danger";
+    var idxCls  = idx >= 85 ? "sc-good" : idx >= 60 ? "sc-warn" : "sc-danger";
+
+    var scoreHTML =
+        "<div class=\"score-row\">" +
+            "<div class=\"score-card " + qpsCls + "\"><span class=\"sc-label\">Est. QPS</span><span class=\"sc-value\">" + fmt(qps) + "</span><span class=\"sc-sub\">queries / second</span></div>" +
+            "<div class=\"score-card " + latCls  + "\"><span class=\"sc-label\">Avg Latency</span><span class=\"sc-value\">" + fmtMs(latency) + "</span><span class=\"sc-sub\">per query</span></div>" +
+            "<div class=\"score-card " + hitCls  + "\"><span class=\"sc-label\">Buffer Hit</span><span class=\"sc-value\">" + Math.round(hitRatio*100) + "%</span><span class=\"sc-sub\">data in RAM</span></div>" +
+            "<div class=\"score-card " + idxCls  + "\"><span class=\"sc-label\">Index Cover</span><span class=\"sc-value\">" + idx + "%</span><span class=\"sc-sub\">of queries</span></div>" +
+            "<div class=\"score-card sc-info\"><span class=\"sc-label\">Storage IOPS</span><span class=\"sc-value\">" + fmt(STORAGE_IOPS[storageIdx]) + "</span><span class=\"sc-sub\">" + STORAGE_LABELS[storageIdx] + "</span></div>" +
+            "<div class=\"score-card sc-info\"><span class=\"sc-label\">Rows</span><span class=\"sc-value\">" + ROW_LABELS[rowsIdx] + "</span><span class=\"sc-sub\">in table</span></div>" +
+        "</div>";
+
+    // Throughput breakdown
+    var maxQ = Math.max(qps, qpsBetterIdx, qpsBiggerBP, qpsNvme, 1);
+    var tputHTML =
+        "<div class=\"tput-section\">" +
+            "<div class=\"tput-title\">Throughput Comparison</div>" +
+            "<div class=\"tput-row\"><span class=\"tput-label\">Current config</span><div class=\"tput-bar-bg\"><div class=\"tput-bar-fill fill-accent\" style=\"width:" + Math.round(qps/maxQ*100) + "%\"></div></div><span class=\"tput-val\">" + fmt(qps) + " QPS</span></div>" +
+            "<div class=\"tput-row\"><span class=\"tput-label\">+20% indexes</span><div class=\"tput-bar-bg\"><div class=\"tput-bar-fill fill-yellow\" style=\"width:" + Math.round(qpsBetterIdx/maxQ*100) + "%\"></div></div><span class=\"tput-val\">" + fmt(qpsBetterIdx) + " QPS</span></div>" +
+            "<div class=\"tput-row\"><span class=\"tput-label\">4x buffer pool</span><div class=\"tput-bar-bg\"><div class=\"tput-bar-fill fill-green\" style=\"width:" + Math.round(qpsBiggerBP/maxQ*100) + "%\"></div></div><span class=\"tput-val\">" + fmt(qpsBiggerBP) + " QPS</span></div>" +
+            "<div class=\"tput-row\"><span class=\"tput-label\">NVMe storage</span><div class=\"tput-bar-bg\"><div class=\"tput-bar-fill fill-blue\" style=\"width:" + Math.round(qpsNvme/maxQ*100) + "%\"></div></div><span class=\"tput-val\">" + fmt(qpsNvme) + " QPS</span></div>" +
+        "</div>";
+
+    // Config comparison
+    function delta(a, b) {
+        if (b <= a) { return "<span class=\"cmp-delta delta-same\">baseline</span>"; }
+        var pct = Math.round(((b - a) / a) * 100);
+        return "<span class=\"cmp-delta delta-up\">+" + pct + "% QPS</span>";
+    }
+
+    var bestImprovement = Math.max(qpsBetterIdx, qpsBiggerBP, qpsNvme);
+    var bestLabel = qpsNvme >= qpsBiggerBP && qpsNvme >= qpsBetterIdx ? "NVMe storage" : qpsBiggerBP >= qpsBetterIdx ? "4x buffer pool" : "+20% index coverage";
+    var bestQps   = bestImprovement;
+
+    var cmpHTML =
+        "<div class=\"compare-grid\">" +
+            "<div class=\"cmp-panel cmp-current\">" +
+                "<div class=\"cmp-title\">Current</div>" +
+                "<div class=\"cmp-qps\">" + fmt(qps) + "</div>" +
+                "<div class=\"cmp-sub\">QPS baseline</div>" +
+                "<span class=\"cmp-delta delta-same\">baseline</span>" +
+            "</div>" +
+            "<div class=\"cmp-panel\">" +
+                "<div class=\"cmp-title\">+Indexes</div>" +
+                "<div class=\"cmp-qps\">" + fmt(qpsBetterIdx) + "</div>" +
+                "<div class=\"cmp-sub\">+20% index coverage</div>" +
+                delta(qps, qpsBetterIdx) +
+            "</div>" +
+            "<div class=\"cmp-panel cmp-better\">" +
+                "<div class=\"cmp-title\">Best: " + bestLabel + "</div>" +
+                "<div class=\"cmp-qps\">" + fmt(bestQps) + "</div>" +
+                "<div class=\"cmp-sub\">highest impact change</div>" +
+                delta(qps, bestQps) +
+            "</div>" +
+        "</div>";
+
+    // Bottlenecks
+    var bns = buildBottlenecks(conns, bp, idx, cpu, storageIdx, rowsIdx, workloadMode, queryMode);
+    var bnsHTML =
+        "<div class=\"bottleneck-list\">" +
+        bns.map(function(b) {
+            return "<div class=\"bottleneck-item " + b.cls + "\">" +
+                "<span class=\"bn-icon\">" + b.icon + "</span>" +
+                "<div class=\"bn-body\"><div class=\"bn-title\">" + b.title + "</div><div class=\"bn-desc\">" + b.desc + "</div></div>" +
+            "</div>";
+        }).join("") +
+        "</div>";
+
+    var resultEl = document.getElementById("result");
+    resultEl.innerHTML =
+        "<div class=\"divider\"></div>" +
+        scoreHTML +
+        "<div class=\"divider\"></div>" +
+        tputHTML +
+        "<div class=\"divider\"></div>" +
+        "<div class=\"tput-title\" style=\"margin-bottom:12px\">Configuration Comparison</div>" +
+        cmpHTML +
+        "<div class=\"divider\"></div>" +
+        "<div class=\"tput-title\" style=\"margin-bottom:10px\">Bottleneck Analysis</div>" +
+        bnsHTML;
+
+    resultEl.classList.add("visible");
+    resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+</script>
+
 </body>
 </html>
