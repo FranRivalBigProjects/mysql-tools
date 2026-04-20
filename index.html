@@ -1,200 +1,687 @@
 <!DOCTYPE html>
+
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+<meta name="robots" content="index, follow">
 
-  <!-- SEO -->
-  <title>MySQL Tools – Query Optimization, Index Analyzer & Performance Tuning</title>
-  <meta name="description" content="Advanced MySQL tools for query optimization, indexing, deadlock detection, replication, and performance tuning. Improve database efficiency.">
-  <meta name="keywords" content="
-    mysql slow query analyzer tool,
-    mysql explain query plan tool,
-    mysql index performance analyzer,
-    mysql deadlock detection tool,
-    mysql query optimizer tool,
-    mysql join performance analyzer,
-    mysql schema design tool,
-    mysql normalization checker,
-    mysql connection pool analyzer,
-    mysql replication lag analyzer,
-    mysql transaction debug tool,
-    mysql lock analyzer tool,
-    mysql database size calculator,
-    mysql query formatter online
-  ">
-  <meta name="robots" content="index, follow">
+<!-- SEO — title targets top queries from Search Console -->
 
-  <!-- Open Graph -->
-  <meta property="og:title" content="MySQL Tools – Optimization, Indexing & Performance Analysis">
-  <meta property="og:description" content="Analyze queries, optimize indexes, detect deadlocks, and improve MySQL performance.">
-  <meta property="og:type" content="website">
+<title>MySQL Optimization Tool – Query Optimizer, Index Analyzer & Tuning Tools Online</title>
+<meta name="description" content="Free MySQL tools online: optimize queries, analyze EXPLAIN plans, detect deadlocks, check indexes, and tune database performance. No installation required. For DBAs and backend developers.">
+<meta name="keywords" content="mysql optimization tool, mysql optimize query online, mysql tuning tool, mysql query optimization tool, mysql query optimizer tool, mysql performance tuning tools, mysql explain query plan tool, mysql index analyzer, mysql deadlock detection, mysql slow query analyzer, mysql join performance, mysql schema design tool, mysql normalization checker, mysql connection pool analyzer, mysql replication lag analyzer, mysql data analysis tools">
 
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      background: #020617;
-      color: #e2e8f0;
-      margin: 0;
-      padding: 20px;
-    }
-    h1, h2 {
-      color: #f59e0b;
-    }
-    a {
-      color: #22c55e;
-      text-decoration: none;
-    }
-    a:hover {
-      text-decoration: underline;
-    }
-    .container {
-      max-width: 1100px;
-      margin: auto;
-    }
-    .tool {
-      margin-bottom: 18px;
-      padding: 16px;
-      background: #0f172a;
-      border-radius: 10px;
-    }
-  </style>
+<meta property="og:title" content="MySQL Optimization Tool – Query Optimizer, Index Analyzer and Tuning Tools Online">
+<meta property="og:description" content="15 free MySQL tools: optimize queries, analyze EXPLAIN plans, detect deadlocks, tune indexes, and improve database performance online.">
+<meta property="og:type" content="website">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg:         #020617;
+    --surface:    #080f1e;
+    --surface-2:  #0d1829;
+    --border:     #162035;
+    --border-hi:  #f59e0b33;
+    --accent:     #f59e0b;
+    --accent-2:   #fbbf24;
+    --accent-dim: rgba(245,158,11,.07);
+    --blue:       #3b82f6;
+    --blue-dim:   rgba(59,130,246,.07);
+    --green:      #22c55e;
+    --green-dim:  rgba(34,197,94,.07);
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+
+    --font-display: "Space Grotesk", sans-serif;
+    --font-mono:    "Space Mono", monospace;
+    --radius:    8px;
+    --radius-lg: 16px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* diagonal stripe background */
+body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(
+        -45deg,
+        transparent,
+        transparent 40px,
+        rgba(245,158,11,.015) 40px,
+        rgba(245,158,11,.015) 41px
+    );
+    pointer-events: none; z-index: 0;
+}
+
+body::after {
+    content: "";
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 400px;
+    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245,158,11,.08) 0%, transparent 70%);
+    pointer-events: none; z-index: 0;
+}
+
+.wrapper {
+    position: relative; z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 28px;
+}
+
+/* HEADER */
+header {
+    padding: 76px 0 64px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .6s ease both;
+}
+
+.header-top {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 40px;
+    flex-wrap: wrap;
+}
+
+.header-left { max-width: 700px; }
+
+.header-eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    font-family: var(--font-mono);
+    font-size: 10px;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border: 1px solid rgba(245,158,11,.2);
+    border-radius: 4px;
+    padding: 4px 12px;
+    margin-bottom: 22px;
+}
+
+.eyebrow-dot {
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--accent);
+    animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
+
+header h1 {
+    font-family: var(--font-display);
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    font-weight: 700;
+    line-height: 1.1;
+    letter-spacing: -.03em;
+    color: #fff;
+    margin-bottom: 18px;
+}
+
+header h1 .hl { color: var(--accent); }
+
+header p {
+    font-size: 1rem;
+    color: var(--muted);
+    font-weight: 300;
+    max-width: 560px;
+}
+
+/* stat pills */
+.stat-pills {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-end;
+    flex-shrink: 0;
+}
+
+.stat-pill {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 5px 14px;
+    white-space: nowrap;
+}
+
+.stat-pill span { color: var(--accent); }
+
+/* SECTIONS */
+section {
+    padding: 52px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .55s ease both;
+}
+
+section:nth-of-type(1) { animation-delay: .07s; }
+section:nth-of-type(2) { animation-delay: .13s; }
+section:nth-of-type(3) { animation-delay: .19s; }
+section:nth-of-type(4) { animation-delay: .25s; }
+section:nth-of-type(5) { animation-delay: .31s; }
+section:nth-of-type(6) { animation-delay: .37s; }
+section:nth-of-type(7) { animation-delay: .43s; }
+section:last-of-type   { border-bottom: none; }
+
+.section-head {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 22px;
+}
+
+.section-head h2 {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    font-weight: 400;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    white-space: nowrap;
+}
+
+.section-rule { flex: 1; height: 1px; background: var(--border); }
+
+/* TOOL CARDS */
+.tools-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: 12px;
+}
+
+.tool {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    padding: 22px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    text-decoration: none;
+    color: inherit;
+    position: relative;
+    overflow: hidden;
+    transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.tool::after {
+    content: "";
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, var(--accent), var(--accent-2));
+    opacity: 0;
+    transition: opacity var(--transition);
+}
+
+.tool:hover {
+    border-color: rgba(245,158,11,.35);
+    transform: translateY(-2px);
+    box-shadow: 0 12px 36px rgba(0,0,0,.5);
+}
+
+.tool:hover::after { opacity: 1; }
+
+.tool-path {
+    font-family: var(--font-mono);
+    font-size: .6rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    opacity: .7;
+}
+
+.tool-name {
+    font-size: .95rem;
+    font-weight: 600;
+    color: #fff;
+    line-height: 1.25;
+}
+
+.tool-desc {
+    font-size: .845rem;
+    color: var(--muted);
+    font-weight: 300;
+    flex: 1;
+    line-height: 1.55;
+}
+
+.tool-cta {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    transition: gap var(--transition);
+}
+
+.tool-cta::after { content: ">"; }
+.tool:hover .tool-cta { gap: 9px; }
+
+/* USE CASES */
+.use-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.use-item {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 15px;
+    font-size: .875rem;
+    color: var(--text);
+    transition: border-color var(--transition);
+}
+
+.use-item:hover { border-color: rgba(245,158,11,.25); }
+.use-arrow { color: var(--accent); font-family: var(--font-mono); font-size: .75rem; flex-shrink: 0; margin-top: 3px; }
+
+/* FAQ */
+.faq-list { display: flex; flex-direction: column; gap: 12px; }
+
+.faq-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    transition: border-color var(--transition);
+}
+
+.faq-item:hover { border-color: rgba(245,158,11,.2); }
+
+.faq-q {
+    font-size: .95rem;
+    font-weight: 600;
+    color: #fff;
+    margin-bottom: 6px;
+}
+
+.faq-a {
+    font-size: .865rem;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.65;
+}
+
+.faq-a code {
+    font-family: var(--font-mono);
+    font-size: .78em;
+    color: var(--accent);
+    background: var(--accent-dim);
+    border-radius: 3px;
+    padding: 1px 6px;
+}
+
+/* TAGS */
+.tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
+
+.tag {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 4px 13px;
+    cursor: default;
+    transition: color var(--transition), border-color var(--transition), background var(--transition);
+}
+
+.tag:hover { color: var(--accent); border-color: rgba(245,158,11,.3); background: var(--accent-dim); }
+
+/* FOOTER */
+footer {
+    padding: 44px 0;
+    border-top: 1px solid var(--border);
+    position: relative; z-index: 1;
+}
+
+.footer-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    flex-wrap: wrap;
+}
+
+.footer-brand {
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    font-weight: 700;
+    color: var(--accent);
+    letter-spacing: .04em;
+}
+
+footer p { font-family: var(--font-mono); font-size: .7rem; color: var(--muted); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 640px) {
+    header { padding: 52px 0 44px; }
+    .header-top { flex-direction: column; }
+    .stat-pills { flex-direction: row; align-items: flex-start; flex-wrap: wrap; }
+    .tools-grid { grid-template-columns: 1fr; }
+    .use-grid   { grid-template-columns: 1fr; }
+}
+</style>
+
 </head>
 
 <body>
-  <div class="container">
+<div class="wrapper">
 
-    <h1>MySQL Tools</h1>
-
-    <p>
-      Optimize your <strong>MySQL database</strong> with tools designed for
-      <em>query analysis, indexing, deadlock detection, schema design, and performance tuning</em>.
-      Improve speed, scalability, and reliability in production systems.
-    </p>
-
-    <h2>Query Analysis & Optimization</h2>
-
-    <div class="tool">
-      <a href="slow-query/">
-        <strong>Slow Query Analyzer</strong>
-      </a>
-      <p>Identify slow queries and optimize performance.</p>
+<!-- HEADER -->
+<header>
+    <div class="header-top">
+        <div class="header-left">
+            <div class="header-eyebrow"><span class="eyebrow-dot"></span>MySQL Toolkit</div>
+            <h1>
+                MySQL <span class="hl">Optimization</span><br>
+                &amp; Tuning Tools Online
+            </h1>
+            <p>
+                15 free tools to optimize MySQL queries, analyze EXPLAIN plans,
+                detect deadlocks, check indexes, and tune database performance —
+                directly in the browser. No installation required.
+            </p>
+        </div>
+        <div class="stat-pills">
+            <div class="stat-pill"><span>15</span> free tools</div>
+            <div class="stat-pill"><span>Online</span> no install</div>
+            <div class="stat-pill">For <span>DBAs</span> &amp; devs</div>
+        </div>
     </div>
+</header>
 
-    <div class="tool">
-      <a href="explain/">
-        <strong>EXPLAIN Plan Analyzer</strong>
-      </a>
-      <p>Analyze execution plans and improve query efficiency.</p>
+<!-- QUERY ANALYSIS -->
+<section>
+    <div class="section-head">
+        <h2>Query Analysis &amp; Optimization</h2>
+        <span class="section-rule"></span>
     </div>
+    <div class="tools-grid">
 
-    <div class="tool">
-      <a href="optimizer/">
-        <strong>Query Optimizer Tool</strong>
-      </a>
-      <p>Get recommendations to optimize complex queries.</p>
+        <a class="tool" href="slow-query/">
+            <span class="tool-path">mysql-tools/slow-query/</span>
+            <span class="tool-name">Slow Query Analyzer</span>
+            <span class="tool-desc">Identify slow MySQL queries by analyzing query patterns, execution time estimates, and missing index opportunities.</span>
+            <span class="tool-cta">Open Analyzer</span>
+        </a>
+
+        <a class="tool" href="explain/">
+            <span class="tool-path">mysql-tools/explain/</span>
+            <span class="tool-name">EXPLAIN Plan Analyzer</span>
+            <span class="tool-desc">Paste your MySQL EXPLAIN output and get a plain-English breakdown of the execution plan with optimization recommendations.</span>
+            <span class="tool-cta">Open EXPLAIN Tool</span>
+        </a>
+
+        <a class="tool" href="optimizer/">
+            <span class="tool-path">mysql-tools/optimizer/</span>
+            <span class="tool-name">MySQL Query Optimizer</span>
+            <span class="tool-desc">Get specific rewrite suggestions for complex SELECT, JOIN, and subquery patterns to reduce cost and improve execution time.</span>
+            <span class="tool-cta">Open Optimizer</span>
+        </a>
+
+        <a class="tool" href="join/">
+            <span class="tool-path">mysql-tools/join/</span>
+            <span class="tool-name">JOIN Performance Analyzer</span>
+            <span class="tool-desc">Analyze JOIN types, cardinality, and index usage. Detect missing indexes on join keys and suggest query rewrites.</span>
+            <span class="tool-cta">Open JOIN Analyzer</span>
+        </a>
+
+        <a class="tool" href="formatter/">
+            <span class="tool-path">mysql-tools/formatter/</span>
+            <span class="tool-name">MySQL Query Formatter</span>
+            <span class="tool-desc">Format and beautify MySQL queries for readability, debugging, and documentation. Supports complex multi-line queries.</span>
+            <span class="tool-cta">Open Formatter</span>
+        </a>
+
     </div>
+</section>
 
-    <div class="tool">
-      <a href="join/">
-        <strong>JOIN Analyzer</strong>
-      </a>
-      <p>Optimize joins and reduce query cost.</p>
+<!-- INDEXING -->
+<section>
+    <div class="section-head">
+        <h2>Indexing &amp; Performance</h2>
+        <span class="section-rule"></span>
     </div>
+    <div class="tools-grid">
 
-    <div class="tool">
-      <a href="formatter/">
-        <strong>Query Formatter</strong>
-      </a>
-      <p>Format SQL queries for better readability and debugging.</p>
+        <a class="tool" href="index/">
+            <span class="tool-path">mysql-tools/index/</span>
+            <span class="tool-name">Index Performance Analyzer</span>
+            <span class="tool-desc">Evaluate index coverage, detect unused or redundant indexes, and get suggestions for composite index creation based on your queries.</span>
+            <span class="tool-cta">Open Index Analyzer</span>
+        </a>
+
+        <a class="tool" href="benchmark/">
+            <span class="tool-path">mysql-tools/benchmark/</span>
+            <span class="tool-name">Query Benchmark Tool</span>
+            <span class="tool-desc">Estimate and compare query performance at different data scales. Simulate load and identify performance bottlenecks before production.</span>
+            <span class="tool-cta">Open Benchmark Tool</span>
+        </a>
+
+        <a class="tool" href="size/">
+            <span class="tool-path">mysql-tools/size/</span>
+            <span class="tool-name">Database Size Calculator</span>
+            <span class="tool-desc">Estimate MySQL table and database storage usage based on schema, row count, and data types. Plan for storage growth.</span>
+            <span class="tool-cta">Open Size Calculator</span>
+        </a>
+
     </div>
+</section>
 
-    <h2>Indexing & Performance</h2>
-
-    <div class="tool">
-      <a href="index/">
-        <strong>Index Analyzer</strong>
-      </a>
-      <p>Evaluate index usage and improve performance.</p>
+<!-- LOCKS -->
+<section>
+    <div class="section-head">
+        <h2>Locks, Transactions &amp; Deadlocks</h2>
+        <span class="section-rule"></span>
     </div>
+    <div class="tools-grid">
 
-    <div class="tool">
-      <a href="benchmark/">
-        <strong>Benchmark Tool</strong>
-      </a>
-      <p>Test database performance under different workloads.</p>
+        <a class="tool" href="deadlock/">
+            <span class="tool-path">mysql-tools/deadlock/</span>
+            <span class="tool-name">Deadlock Detector</span>
+            <span class="tool-desc">Analyze transaction patterns to identify deadlock scenarios. Understand lock dependency graphs and get resolution strategies.</span>
+            <span class="tool-cta">Open Deadlock Detector</span>
+        </a>
+
+        <a class="tool" href="lock/">
+            <span class="tool-path">mysql-tools/lock/</span>
+            <span class="tool-name">Lock Analyzer</span>
+            <span class="tool-desc">Diagnose row-level, table-level, and metadata lock contention. Identify long-running transactions that block other queries.</span>
+            <span class="tool-cta">Open Lock Analyzer</span>
+        </a>
+
+        <a class="tool" href="transaction/">
+            <span class="tool-path">mysql-tools/transaction/</span>
+            <span class="tool-name">Transaction Debug Tool</span>
+            <span class="tool-desc">Debug transaction flows, isolation level issues, and consistency problems. Analyze BEGIN/COMMIT/ROLLBACK patterns.</span>
+            <span class="tool-cta">Open Transaction Tool</span>
+        </a>
+
     </div>
+</section>
 
-    <div class="tool">
-      <a href="size/">
-        <strong>Database Size Calculator</strong>
-      </a>
-      <p>Estimate storage usage and growth.</p>
+<!-- SCHEMA -->
+<section>
+    <div class="section-head">
+        <h2>Schema &amp; Design</h2>
+        <span class="section-rule"></span>
     </div>
+    <div class="tools-grid">
 
-    <h2>Locks, Transactions & Deadlocks</h2>
+        <a class="tool" href="schema/">
+            <span class="tool-path">mysql-tools/schema/</span>
+            <span class="tool-name">Schema Design Tool</span>
+            <span class="tool-desc">Design efficient MySQL database schemas. Get recommendations on data types, nullability, constraints, and table relationships.</span>
+            <span class="tool-cta">Open Schema Tool</span>
+        </a>
 
-    <div class="tool">
-      <a href="deadlock/">
-        <strong>Deadlock Detector</strong>
-      </a>
-      <p>Identify and resolve deadlocks in transactions.</p>
+        <a class="tool" href="normalization/">
+            <span class="tool-path">mysql-tools/normalization/</span>
+            <span class="tool-name">Normalization Checker</span>
+            <span class="tool-desc">Check your schema against 1NF, 2NF, and 3NF normalization rules. Detect redundancy, partial dependencies, and transitive dependencies.</span>
+            <span class="tool-cta">Open Normalization Checker</span>
+        </a>
+
     </div>
+</section>
 
-    <div class="tool">
-      <a href="lock/">
-        <strong>Lock Analyzer</strong>
-      </a>
-      <p>Analyze locking behavior and contention issues.</p>
+<!-- REPLICATION -->
+<section>
+    <div class="section-head">
+        <h2>Replication &amp; Scaling</h2>
+        <span class="section-rule"></span>
     </div>
+    <div class="tools-grid">
 
-    <div class="tool">
-      <a href="transaction/">
-        <strong>Transaction Debug Tool</strong>
-      </a>
-      <p>Debug transaction flows and consistency problems.</p>
+        <a class="tool" href="replication/">
+            <span class="tool-path">mysql-tools/replication/</span>
+            <span class="tool-name">Replication Lag Analyzer</span>
+            <span class="tool-desc">Monitor MySQL replication health, estimate lag from binary log patterns, and diagnose replica delay root causes.</span>
+            <span class="tool-cta">Open Replication Tool</span>
+        </a>
+
+        <a class="tool" href="pool/">
+            <span class="tool-path">mysql-tools/pool/</span>
+            <span class="tool-name">Connection Pool Analyzer</span>
+            <span class="tool-desc">Optimize MySQL connection pooling parameters. Calculate ideal pool size based on workload, thread count, and query duration.</span>
+            <span class="tool-cta">Open Pool Analyzer</span>
+        </a>
+
     </div>
+</section>
 
-    <h2>Schema & Design</h2>
-
-    <div class="tool">
-      <a href="schema/">
-        <strong>Schema Design Tool</strong>
-      </a>
-      <p>Design efficient database schemas.</p>
+<!-- USE CASES -->
+<section>
+    <div class="section-head">
+        <h2>Use Cases</h2>
+        <span class="section-rule"></span>
     </div>
-
-    <div class="tool">
-      <a href="normalization/">
-        <strong>Normalization Checker</strong>
-      </a>
-      <p>Ensure proper normalization and reduce redundancy.</p>
+    <div class="use-grid">
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Optimizing slow MySQL queries in production without downtime</div>
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Reading and understanding MySQL EXPLAIN output for the first time</div>
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Detecting missing indexes causing full table scans</div>
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Diagnosing deadlocks in high-concurrency applications</div>
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Estimating database storage growth before scaling</div>
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Tuning connection pool settings for Node.js or PHP apps</div>
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Normalizing a legacy schema to reduce data redundancy</div>
+        <div class="use-item"><span class="use-arrow">-&gt;</span>Analyzing replication lag in primary-replica MySQL setups</div>
     </div>
+</section>
 
-    <h2>Replication & Scaling</h2>
-
-    <div class="tool">
-      <a href="replication/">
-        <strong>Replication Analyzer</strong>
-      </a>
-      <p>Monitor replication and detect lag.</p>
+<!-- FAQ — targets top Search Console queries directly -->
+<section>
+    <div class="section-head">
+        <h2>Frequently Asked Questions</h2>
+        <span class="section-rule"></span>
     </div>
+    <div class="faq-list">
 
-    <div class="tool">
-      <a href="pool/">
-        <strong>Connection Pool Analyzer</strong>
-      </a>
-      <p>Optimize connection pooling and resource usage.</p>
+        <div class="faq-item">
+            <p class="faq-q">How do I optimize a slow MySQL query online?</p>
+            <p class="faq-a">Start by running <code>EXPLAIN SELECT ...</code> on the slow query. Look for rows with <code>type = ALL</code> (full table scan) or <code>Extra = Using filesort</code> — both are signs of missing indexes. Our Slow Query Analyzer and EXPLAIN Plan Analyzer guide you through this process step by step without needing a local MySQL instance.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-q">What is the best MySQL query optimization tool?</p>
+            <p class="faq-a">The most effective approach combines three tools: EXPLAIN for execution plan analysis, an index analyzer to detect missing or redundant indexes, and a query rewriter for structural improvements. Our MySQL Query Optimizer addresses all three — paste your query and get specific rewrite suggestions and index recommendations.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-q">How do I use MySQL EXPLAIN to optimize queries?</p>
+            <p class="faq-a">Prepend <code>EXPLAIN</code> to any SELECT query. The output shows how MySQL plans to execute it — which indexes it uses, how many rows it scans, and the join order. Key columns to watch: <code>type</code> (aim for <code>ref</code> or <code>eq_ref</code>, avoid <code>ALL</code>), <code>key</code> (which index is used), and <code>rows</code> (estimated rows scanned). Our EXPLAIN Plan Analyzer translates this output into plain English.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-q">How do I tune MySQL performance for high traffic?</p>
+            <p class="faq-a">MySQL tuning for high traffic covers four areas: query optimization (indexes, rewrites), connection management (pool sizing, thread limits), InnoDB configuration (<code>innodb_buffer_pool_size</code> should be 60-80% of available RAM), and read scaling (read replicas for SELECT-heavy workloads). Our tools cover query and connection pool tuning — start with the Slow Query Analyzer to find the highest-impact fixes first.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-q">How do I detect and fix MySQL deadlocks?</p>
+            <p class="faq-a">Run <code>SHOW ENGINE INNODB STATUS</code> and look for the <code>LATEST DETECTED DEADLOCK</code> section. It shows the two transactions and the rows they were waiting on. The fix usually involves reordering operations so all transactions access rows in the same order, or reducing transaction scope. Our Deadlock Detector helps you analyze these patterns and understand the dependency chain.</p>
+        </div>
+
+        <div class="faq-item">
+            <p class="faq-q">What is the difference between MySQL index types?</p>
+            <p class="faq-a">MySQL supports B-tree indexes (default, good for range queries and equality), hash indexes (InnoDB adaptive, good for exact lookups), full-text indexes (for text search with MATCH AGAINST), and composite indexes (multiple columns). The most common optimization is adding a composite index that covers the WHERE clause columns in selectivity order — most selective column first. Our Index Analyzer detects which queries would benefit from new indexes.</p>
+        </div>
+
     </div>
+</section>
 
-    <hr>
+<!-- LONG-TAIL — mirrors Search Console queries + extensions -->
+<section>
+    <div class="section-head">
+        <h2>Common Search Queries</h2>
+        <span class="section-rule"></span>
+    </div>
+    <div class="tag-cloud">
+        <span class="tag">mysql optimization tool online</span>
+        <span class="tag">mysql optimize query online free</span>
+        <span class="tag">mysql tuning tool</span>
+        <span class="tag">mysql query optimization tool</span>
+        <span class="tag">mysql query optimizer online</span>
+        <span class="tag">mysql performance tuning tools</span>
+        <span class="tag">mysql explain query plan analyzer</span>
+        <span class="tag">mysql slow query analyzer</span>
+        <span class="tag">mysql index performance tool</span>
+        <span class="tag">mysql deadlock detection tool</span>
+        <span class="tag">mysql data analysis tools</span>
+        <span class="tag">mysql join performance analyzer</span>
+        <span class="tag">mysql replication lag analyzer</span>
+        <span class="tag">mysql connection pool calculator</span>
+        <span class="tag">mysql normalization checker</span>
+        <span class="tag">mysql schema design tool online</span>
+        <span class="tag">how to optimize mysql queries</span>
+        <span class="tag">mysql explain output analyzer</span>
+    </div>
+</section>
 
-    <p>
-      Built for <strong>backend developers, DBAs, and DevOps engineers</strong>
-      managing MySQL in production environments.
-    </p>
+<!-- FOOTER -->
+<footer>
+    <div class="footer-inner">
+        <span class="footer-brand">MySQL Tools</span>
+        <p>15 free tools for DBAs, backend developers, and DevOps engineers.</p>
+    </div>
+</footer>
 
-  </div>
+
+</div>
 </body>
 </html>
