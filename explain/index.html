@@ -1,19 +1,939 @@
-<html>
+<!DOCTYPE html>
+
+<html lang="en">
 <head>
-<meta charset='UTF-8'>
-<title>MySQL Explain Plan Visualizer</title>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
-<link rel='stylesheet' href='styles.css'>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+<title>MySQL EXPLAIN Plan Analyzer – Understand Query Execution Plans Online</title>
+<meta name="description" content="Paste your MySQL EXPLAIN output and get a plain-English breakdown of each row. Understand access types, key usage, row estimates, and get specific index recommendations to optimize your query.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg:         #020617;
+    --surface:    #080f1e;
+    --surface-2:  #0d1829;
+    --border:     #162035;
+    --accent:     #f59e0b;
+    --accent-dim: rgba(245,158,11,.07);
+    --green:      #22c55e;
+    --green-dim:  rgba(34,197,94,.08);
+    --yellow:     #fbbf24;
+    --yellow-dim: rgba(251,191,36,.07);
+    --red:        #ef4444;
+    --red-dim:    rgba(239,68,68,.08);
+    --blue:       #38bdf8;
+    --blue-dim:   rgba(56,189,248,.08);
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+
+    --font-display: "Space Grotesk", sans-serif;
+    --font-mono:    "Space Mono", monospace;
+    --radius:    8px;
+    --radius-lg: 16px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(245,158,11,.012) 40px, rgba(245,158,11,.012) 41px);
+    pointer-events: none; z-index: 0;
+}
+
+.wrapper {
+    position: relative; z-index: 1;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+}
+
+nav {
+    position: relative; z-index: 2;
+    padding: 18px 24px;
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+nav a {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+}
+
+nav a:hover { color: var(--accent); }
+nav a::before { content: "<-"; }
+
+header {
+    padding: 36px 0 32px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+}
+
+.header-chip {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--blue);
+    background: var(--blue-dim);
+    border: 1px solid rgba(56,189,248,.2);
+    border-radius: 4px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+
+header h1 {
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+}
+
+header h1 .acc { color: var(--blue); }
+header p { font-size: .9rem; color: var(--muted); font-weight: 300; max-width: 560px; }
+
+.tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--blue);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin: 32px 0;
+    animation: fadeUp .5s .08s ease both;
+}
+
+.samples-row {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.sample-btn {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.sample-btn:hover { color: var(--accent); border-color: rgba(245,158,11,.3); }
+
+.editor-label {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.editor-label::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--blue);
+}
+
+.editor-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.editor-wrap:focus-within {
+    border-color: rgba(56,189,248,.4);
+    box-shadow: 0 0 0 3px rgba(56,189,248,.08);
+}
+
+textarea {
+    display: block;
+    width: 100%;
+    min-height: 160px;
+    background: var(--surface-2);
+    border: none;
+    outline: none;
+    padding: 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.65;
+    resize: vertical;
+    tab-size: 4;
+}
+
+textarea::placeholder { color: var(--muted); opacity: .4; }
+
+.btn-run {
+    width: 100%;
+    background: var(--blue);
+    color: #020617;
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px 24px;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn-run:hover { background: #7dd3fc; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(56,189,248,.3); }
+.btn-run:active { transform: translateY(0); }
+
+#result { margin-top: 24px; display: none; animation: fadeUp .35s ease both; }
+#result.visible { display: block; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* summary pills */
+.summary-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.sum-pill {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    border-radius: 100px;
+    padding: 5px 14px;
+}
+
+.pill-good   { color: var(--green);  background: var(--green-dim);  border: 1px solid rgba(34,197,94,.2); }
+.pill-warn   { color: var(--yellow); background: var(--yellow-dim); border: 1px solid rgba(251,191,36,.2); }
+.pill-bad    { color: var(--red);    background: var(--red-dim);    border: 1px solid rgba(239,68,68,.2); }
+.pill-info   { color: var(--blue);   background: var(--blue-dim);   border: 1px solid rgba(56,189,248,.2); }
+
+/* EXPLAIN row cards */
+.explain-rows { display: flex; flex-direction: column; gap: 16px; margin-bottom: 20px; }
+
+.explain-row-card {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+}
+
+.explain-row-card.sev-good   { border-left: 4px solid var(--green); }
+.explain-row-card.sev-warn   { border-left: 4px solid var(--yellow); }
+.explain-row-card.sev-bad    { border-left: 4px solid var(--red); }
+.explain-row-card.sev-info   { border-left: 4px solid var(--blue); }
+
+.er-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 10px 16px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.er-id {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--muted);
+    width: 60px;
+    flex-shrink: 0;
+}
+
+.er-table {
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    color: #fff;
+    font-weight: 700;
+    flex: 1;
+}
+
+.er-type-badge {
+    font-family: var(--font-mono);
+    font-size: .66rem;
+    letter-spacing: .05em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 3px 10px;
+    flex-shrink: 0;
+}
+
+.type-good  { background: var(--green-dim);  color: var(--green); border: 1px solid rgba(34,197,94,.2); }
+.type-ok    { background: var(--blue-dim);    color: var(--blue);  border: 1px solid rgba(56,189,248,.2); }
+.type-warn  { background: var(--yellow-dim);  color: var(--yellow);border: 1px solid rgba(251,191,36,.2); }
+.type-bad   { background: var(--red-dim);     color: var(--red);   border: 1px solid rgba(239,68,68,.2); }
+
+.er-rows-est {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+    flex-shrink: 0;
+}
+
+/* columns grid */
+.er-body { padding: 14px 16px; }
+
+.er-cols-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.er-col {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.er-col-name {
+    font-family: var(--font-mono);
+    font-size: .58rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.er-col-val {
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    color: var(--text);
+    word-break: break-all;
+}
+
+.er-col-val.cv-null  { color: var(--muted); font-style: italic; }
+.er-col-val.cv-good  { color: var(--green); }
+.er-col-val.cv-warn  { color: var(--yellow); }
+.er-col-val.cv-bad   { color: var(--red); }
+
+/* explanation */
+.er-explanation {
+    font-size: .845rem;
+    color: var(--muted);
+    font-weight: 300;
+    line-height: 1.6;
+    padding-top: 10px;
+    border-top: 1px solid var(--border);
+    font-style: italic;
+}
+
+.er-explanation strong { color: var(--text); font-weight: 500; font-style: normal; }
+
+/* extra warnings */
+.er-extras {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-top: 10px;
+}
+
+.er-extra {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    line-height: 1.5;
+}
+
+.er-extra.ex-bad   { color: var(--red); }
+.er-extra.ex-warn  { color: var(--yellow); }
+.er-extra.ex-good  { color: var(--green); }
+
+/* recommendations */
+.rec-list { display: flex; flex-direction: column; gap: 8px; }
+
+.rec-item {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 13px 16px;
+}
+
+.rec-item.ri-critical { border-left: 3px solid var(--red); }
+.rec-item.ri-high     { border-left: 3px solid var(--yellow); }
+.rec-item.ri-medium   { border-left: 3px solid var(--blue); }
+
+.ri-icon { font-family: var(--font-mono); font-size: .75rem; flex-shrink: 0; margin-top: 2px; }
+.ri-critical .ri-icon { color: var(--red); }
+.ri-high     .ri-icon { color: var(--yellow); }
+.ri-medium   .ri-icon { color: var(--blue); }
+
+.ri-body { flex: 1; }
+.ri-title { font-family: var(--font-mono); font-size: .8rem; color: var(--text); margin-bottom: 4px; }
+.ri-desc  { font-size: .82rem; color: var(--muted); font-weight: 300; font-style: italic; line-height: 1.55; }
+.ri-code  {
+    font-family: var(--font-mono);
+    font-size: .74rem;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(34,197,94,.15);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    margin-top: 8px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+/* legend */
+.legend {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.legend-item {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 10px 12px;
+}
+
+.legend-dot {
+    width: 8px; height: 8px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 5px;
+}
+
+.ld-good { background: var(--green); }
+.ld-warn { background: var(--yellow); }
+.ld-bad  { background: var(--red); }
+
+.legend-text { flex: 1; }
+.legend-type { font-family: var(--font-mono); font-size: .7rem; color: var(--text); margin-bottom: 1px; }
+.legend-desc { font-size: .72rem; color: var(--muted); font-style: italic; }
+
+/* info */
+.info-section {
+    padding: 36px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .15s ease both;
+}
+
+.info-section h2 { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 14px; }
+.info-section p  { font-size: .875rem; color: var(--muted); font-weight: 300; margin-bottom: 10px; max-width: 600px; }
+.info-section ul { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.info-section ul li { display: flex; gap: 10px; font-family: var(--font-mono); font-size: .76rem; color: var(--text); }
+.info-section ul li::before { content: "->"; color: var(--accent); flex-shrink: 0; }
+
+footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    max-width: 960px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+footer p { font-family: var(--font-mono); font-size: .68rem; color: var(--muted); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 540px) {
+    .tool-card { padding: 18px; }
+    .er-cols-grid { grid-template-columns: 1fr 1fr; }
+}
+</style>
+
 </head>
 <body>
-<div class='container'>
-<h1>MySQL Explain Plan Visualizer</h1>
-<textarea id='input'></textarea>
-<input id='value' placeholder='Optional metric'>
-<button onclick='run()'>Run</button>
-<div id='res' class='result'></div>
+
+<nav class="wrapper">
+    <a href="/mysql-tools/">MySQL Tools</a>
+</nav>
+
+<div class="wrapper">
+
+<header>
+    <div class="header-chip">EXPLAIN Analyzer</div>
+    <h1>MySQL <span class="acc">EXPLAIN</span> Plan Analyzer</h1>
+    <p>Paste your MySQL <code style="font-family:var(--font-mono);font-size:.85em;color:var(--blue);background:var(--blue-dim);padding:1px 6px;border-radius:3px">EXPLAIN</code> output and get a plain-English breakdown of every row — access types, index usage, row estimates, and specific optimization recommendations.</p>
+</header>
+
+<div class="tool-card">
+
+<div class="samples-row">
+    <span style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);align-self:center">Samples:</span>
+    <button class="sample-btn" onclick="loadSample('full_scan')">Full table scan</button>
+    <button class="sample-btn" onclick="loadSample('good_join')">Good JOIN</button>
+    <button class="sample-btn" onclick="loadSample('bad_join')">Bad JOIN</button>
+    <button class="sample-btn" onclick="loadSample('filesort')">Filesort + tmpfile</button>
+    <button class="sample-btn" onclick="loadSample('covering')">Covering index</button>
 </div>
-<script src='script.js'></script>
+
+<div class="editor-label">EXPLAIN output (tabular or vertical format)</div>
+<div class="editor-wrap">
+    <textarea id="codeInput" placeholder="Paste the output of:  EXPLAIN SELECT ...
+
+Supports both formats:
++––+––––+——+——+––––+
+| id | type   | …  |
++––+––––+——+——+––––+
+
+And vertical format (\G):
+id: 1
+select_type: SIMPLE
+…”></textarea>
+</div>
+
+<button class="btn-run" onclick="analyze()">Analyze EXPLAIN Plan</button>
+
+<div id="result"></div>
+
+</div>
+
+<div class="info-section">
+    <h2>EXPLAIN Column Reference</h2>
+    <p>The most important columns to check in any EXPLAIN output:</p>
+    <ul>
+        <li>type -- access method. Best to worst: system, const, eq_ref, ref, range, index, ALL</li>
+        <li>key -- which index MySQL chose. NULL means no index used (potential full scan)</li>
+        <li>rows -- estimated rows scanned. Multiply across all join rows for total cost</li>
+        <li>Extra -- additional info. "Using filesort" and "Using temporary" are expensive</li>
+        <li>filtered -- percentage of rows that pass the WHERE clause after the access</li>
+        <li>possible_keys -- indexes MySQL considered but may not have chosen</li>
+    </ul>
+</div>
+
+</div>
+
+<footer class="wrapper">
+    <p>MySQL Tools -- EXPLAIN Plan Analyzer</p>
+</footer>
+
+<script>
+var SAMPLES = {
+    full_scan:
+"+----+-------------+---------+------------+------+---------------+------+---------+------+-------+----------+-------------+\n| id | select_type | table   | partitions | type | possible_keys | key  | key_len | ref  | rows  | filtered | Extra       |\n+----+-------------+---------+------------+------+---------------+------+---------+------+-------+----------+-------------+\n|  1 | SIMPLE      | orders  | NULL       | ALL  | NULL          | NULL | NULL    | NULL | 98432 |   100.00 | Using where |\n+----+-------------+---------+------------+------+---------------+------+---------+------+-------+----------+-------------+",
+
+    good_join:
+"+----+-------------+----------+--------+-----------------+---------+---------+--------------------------------+------+----------+-------+\n| id | select_type | table    | type   | possible_keys   | key     | key_len | ref                            | rows | filtered | Extra |\n+----+-------------+----------+--------+-----------------+---------+---------+--------------------------------+------+----------+-------+\n|  1 | SIMPLE      | orders   | ref    | idx_customer_id | idx_customer_id | 8 | const                    |   12 |   100.00 | NULL  |\n|  1 | SIMPLE      | items    | eq_ref | PRIMARY         | PRIMARY | 8       | shop.orders.order_id           |    1 |   100.00 | NULL  |\n+----+-------------+----------+--------+-----------------+---------+---------+--------------------------------+------+----------+-------+",
+
+    bad_join:
+"+----+-------------+----------+------+---------------+------+---------+------+--------+----------+----------------------------------------------------+\n| id | select_type | table    | type | possible_keys | key  | key_len | ref  | rows   | filtered | Extra                                              |\n+----+-------------+----------+------+---------------+------+---------+------+--------+----------+----------------------------------------------------+\n|  1 | SIMPLE      | orders   | ALL  | NULL          | NULL | NULL    | NULL | 124500 |    10.00 | Using where                                        |\n|  1 | SIMPLE      | customers| ALL  | NULL          | NULL | NULL    | NULL |  50000 |   100.00 | Using where; Using join buffer (Block Nested Loop) |\n+----+-------------+----------+------+---------------+------+---------+------+--------+----------+----------------------------------------------------+",
+
+    filesort:
+"+----+-------------+---------+------+---------------+------+---------+------+-------+----------+---------------------------------+\n| id | select_type | table   | type | possible_keys | key  | key_len | ref  | rows  | filtered | Extra                           |\n+----+-------------+---------+------+---------------+------+---------+------+-------+----------+---------------------------------+\n|  1 | SIMPLE      | products| ALL  | NULL          | NULL | NULL    | NULL | 45200 |    33.33 | Using where; Using filesort     |\n+----+-------------+---------+------+---------------+------+---------+------+-------+----------+---------------------------------+",
+
+    covering:
+"+----+-------------+---------+-------+-------------------+-------------------+---------+------+------+----------+-------------+\n| id | select_type | table   | type  | possible_keys     | key               | key_len | ref  | rows | filtered | Extra       |\n+----+-------------+---------+-------+-------------------+-------------------+---------+------+------+----------+-------------+\n|  1 | SIMPLE      | events  | range | idx_date_status   | idx_date_status   | 9       | NULL | 1240 |   100.00 | Using index |\n+----+-------------+---------+-------+-------------------+-------------------+---------+------+------+----------+-------------+"
+};
+
+function loadSample(key) {
+    document.getElementById("codeInput").value = SAMPLES[key];
+}
+
+// ── Access type classification ───────────────────────────
+var TYPE_INFO = {
+    "system": { cls: "type-good", sev: "good", label: "system", desc: "Best possible. Table has exactly one row (system table)." },
+    "const":  { cls: "type-good", sev: "good", label: "const",  desc: "Excellent. At most one matching row, read once at query start. Used for PRIMARY KEY or UNIQUE index equality lookups." },
+    "eq_ref": { cls: "type-good", sev: "good", label: "eq_ref", desc: "Excellent. One row read per row from previous table. Best JOIN access type for non-const joins." },
+    "ref":    { cls: "type-ok",   sev: "info", label: "ref",    desc: "Good. All rows with matching index values are read. Used for non-unique index lookups." },
+    "fulltext":{ cls:"type-ok",   sev: "info", label:"fulltext",desc: "FULLTEXT index used for text search." },
+    "ref_or_null":{ cls:"type-ok",sev:"info", label:"ref_or_null",desc:"Like ref but also reads rows where the key is NULL." },
+    "index_merge":{ cls:"type-ok",sev:"warn", label:"index_merge",desc:"Multiple indexes merged. Generally OK but sometimes a sign that a composite index could help." },
+    "unique_subquery":{ cls:"type-ok",sev:"info",label:"unique_subquery",desc:"Like eq_ref but for IN subqueries." },
+    "range":  { cls: "type-warn", sev: "warn", label: "range",  desc: "OK. Only rows in a given range are retrieved using an index. Common for BETWEEN, >, <, IN." },
+    "index":  { cls: "type-warn", sev: "warn", label: "index",  desc: "Index full scan. Reads the entire index — similar cost to ALL but uses index instead of data file. Often avoidable." },
+    "ALL":    { cls: "type-bad",  sev: "bad",  label: "ALL",    desc: "Full table scan. Every row is read. For large tables this is almost always a problem that an index would fix." }
+};
+
+var EXTRA_INFO = {
+    "Using index":             { sev: "good", msg: "Covering index -- query satisfied entirely from the index, no row fetch needed. Excellent." },
+    "Using where":             { sev: "info", msg: "MySQL filters rows after reading them. Acceptable, but ensure the WHERE column is indexed." },
+    "Using filesort":          { sev: "bad",  msg: "Extra sort pass required -- cannot use index order. Expensive on large result sets. Add index on ORDER BY column(s)." },
+    "Using temporary":         { sev: "bad",  msg: "Temporary table created for GROUP BY or DISTINCT. Memory-intensive, may spill to disk. Consider an index covering the GROUP BY columns." },
+    "Using join buffer":       { sev: "bad",  msg: "Block Nested Loop join -- the joined table has no usable index. Add an index on the join key column." },
+    "Using index condition":   { sev: "info", msg: "Index Condition Pushdown (ICP) active. Additional WHERE conditions evaluated at storage engine level. Good." },
+    "Impossible WHERE":        { sev: "warn", msg: "WHERE clause can never be true. Query returns no rows regardless of data." },
+    "Select tables optimized away": { sev: "good", msg: "Query resolved at optimization stage (e.g. MIN/MAX on indexed column). No table access needed." }
+};
+
+// ── Parse tabular EXPLAIN ────────────────────────────────
+function parseTabular(src) {
+    var lines = src.split("\n").map(function(l) { return l.trim(); }).filter(function(l) { return l.length > 0; });
+    var rows = [];
+    var headers = null;
+
+    for (var i = 0; i < lines.length; i++) {
+        var l = lines[i];
+        if (/^\+[-+]+\+$/.test(l)) { continue; } // separator line
+        if (l.startsWith("|")) {
+            var cells = l.split("|").slice(1, -1).map(function(c) { return c.trim(); });
+            if (!headers) {
+                headers = cells.map(function(h) { return h.toLowerCase(); });
+            } else {
+                if (headers.length === cells.length) {
+                    var row = {};
+                    headers.forEach(function(h, idx) { row[h] = cells[idx]; });
+                    rows.push(row);
+                }
+            }
+        }
+    }
+    return rows;
+}
+
+// ── Parse vertical format (\G) ───────────────────────────
+function parseVertical(src) {
+    var rows = [];
+    var blocks = src.split(/\*+\s+\d+\.\s+row\s+\*+/i);
+    if (blocks.length <= 1) {
+        // try splitting by empty lines with key: value pattern
+        var lines = src.split("\n");
+        var cur = {};
+        var hasData = false;
+        for (var i = 0; i < lines.length; i++) {
+            var m = lines[i].match(/^\s*(\w+)\s*:\s*(.*)$/);
+            if (m) {
+                cur[m[1].toLowerCase()] = m[2].trim();
+                hasData = true;
+            } else if (hasData && lines[i].trim() === "") {
+                if (Object.keys(cur).length > 0) { rows.push(cur); cur = {}; hasData = false; }
+            }
+        }
+        if (Object.keys(cur).length > 0) { rows.push(cur); }
+        return rows;
+    }
+
+    for (var j = 1; j < blocks.length; j++) {
+        var row = {};
+        var blines = blocks[j].split("\n");
+        for (var k = 0; k < blines.length; k++) {
+            var bm = blines[k].match(/^\s*(\w+)\s*:\s*(.*)$/);
+            if (bm) { row[bm[1].toLowerCase()] = bm[2].trim(); }
+        }
+        if (Object.keys(row).length > 0) { rows.push(row); }
+    }
+    return rows;
+}
+
+function parseExplain(src) {
+    src = src.trim();
+    if (src.includes("|")) { return parseTabular(src); }
+    return parseVertical(src);
+}
+
+// ── Build analysis for one row ───────────────────────────
+function analyzeRow(row, idx) {
+    var table    = row["table"]   || row["table_name"] || "table" + (idx+1);
+    var type     = (row["type"]   || row["access_type"] || "ALL").trim();
+    var key      = row["key"]     || "NULL";
+    var possKeys = row["possible_keys"] || "NULL";
+    var rowEst   = row["rows"]    || "?";
+    var filtered = row["filtered"]|| "?";
+    var extra    = row["extra"]   || row["Extra"] || "";
+    var keyLen   = row["key_len"] || "NULL";
+    var ref      = row["ref"]     || "NULL";
+    var selectType = row["select_type"] || "SIMPLE";
+
+    var typeInfo  = TYPE_INFO[type] || { cls: "type-warn", sev: "warn", label: type, desc: "Unknown access type: " + type };
+    var rowNum    = parseInt(rowEst.replace(/,/g, ""), 10) || 0;
+
+    // severity of this row
+    var sev = typeInfo.sev;
+    if (extra.includes("Using filesort") || extra.includes("Using temporary") || extra.includes("Using join buffer")) { sev = "bad"; }
+    if (sev === "info" && rowNum > 10000) { sev = "warn"; }
+
+    // explanation
+    var explanation = "<strong>" + table + "</strong>: ";
+    if (type === "ALL") {
+        explanation += "Full table scan of <strong>" + table + "</strong> reading approximately <strong>" + rowEst + " rows</strong>. " +
+            (possKeys !== "NULL" ? "MySQL considered " + possKeys + " but did not use " + (key === "NULL" ? "any" : key) + ". " : "No indexes exist on the columns in this WHERE clause. ") +
+            "This is the most common cause of slow queries.";
+    } else if (type === "index") {
+        explanation += "Full index scan — reads the entire <strong>" + (key !== "NULL" ? key : "index") + "</strong> (~" + rowEst + " rows). " +
+            "While faster than ALL (no disk row fetch), it still reads every index entry. Usually means the WHERE clause isn't selective enough for the index.";
+    } else if (type === "range") {
+        explanation += "Index range scan on <strong>" + (key !== "NULL" ? key : "?") + "</strong> (~" + rowEst + " rows). " +
+            "Efficient for BETWEEN, &gt;, &lt;, IN queries. " +
+            (parseFloat(filtered) < 30 ? "However only " + filtered + "% of rows pass the filter — consider a more selective index." : "Filter rate looks acceptable.");
+    } else if (type === "ref") {
+        explanation += "Index lookup on <strong>" + (key !== "NULL" ? key : "?") + "</strong> (~" + rowEst + " rows). " +
+            "Good — reading only matching rows. " + (ref !== "NULL" ? "Join condition: " + ref + "." : "");
+    } else if (type === "eq_ref") {
+        explanation += "Unique index lookup on <strong>" + (key !== "NULL" ? key : "PRIMARY") + "</strong> — exactly 1 row per join. Optimal JOIN access.";
+    } else if (type === "const") {
+        explanation += "Constant lookup on <strong>" + (key !== "NULL" ? key : "PRIMARY") + "</strong> — result known at parse time. Best possible access.";
+    } else {
+        explanation += "Access type <strong>" + type + "</strong> on " + table + ". " + typeInfo.desc;
+    }
+
+    // extras
+    var extras = [];
+    if (extra) {
+        var extraParts = extra.split(/;|,/).map(function(e) { return e.trim(); });
+        extraParts.forEach(function(ep) {
+            for (var key in EXTRA_INFO) {
+                if (ep.indexOf(key) !== -1) {
+                    var ei = EXTRA_INFO[key];
+                    extras.push({ sev: ei.sev, msg: ep + " -- " + ei.msg });
+                }
+            }
+        });
+        // catch anything not in the map
+        if (extras.length === 0 && extra !== "NULL" && extra !== "") {
+            extras.push({ sev: "info", msg: extra });
+        }
+    }
+
+    return {
+        table: table, type: type, typeInfo: typeInfo,
+        key: key, possKeys: possKeys, rowEst: rowEst, rowNum: rowNum,
+        filtered: filtered, extra: extra, keyLen: keyLen, ref: ref,
+        selectType: selectType, sev: sev, explanation: explanation, extras: extras
+    };
+}
+
+// ── Global recommendations ───────────────────────────────
+function buildRecs(analyses) {
+    var recs = [];
+    var fullScans = analyses.filter(function(a) { return a.type === "ALL"; });
+    var fileSorts = analyses.filter(function(a) { return a.extra.includes("Using filesort"); });
+    var tmpTables = analyses.filter(function(a) { return a.extra.includes("Using temporary"); });
+    var joinBuf   = analyses.filter(function(a) { return a.extra.includes("Using join buffer"); });
+    var totalRows = analyses.reduce(function(s, a) { return s * Math.max(a.rowNum, 1); }, 1);
+
+    fullScans.forEach(function(a) {
+        var hint = a.possKeys !== "NULL"
+            ? "MySQL saw possible indexes (" + a.possKeys + ") but didn't use them — check if index statistics are up to date with ANALYZE TABLE."
+            : "No usable index exists. Create an index on the column(s) in the WHERE clause for " + a.table + ".";
+        recs.push({
+            cls: "ri-critical", icon: "[!]",
+            title: a.table + " -- full table scan (" + a.rowEst + " rows)",
+            desc: hint,
+            code: "-- Add index on WHERE clause column(s) for " + a.table + ":\nALTER TABLE " + a.table + " ADD INDEX idx_<column> (<where_column>);\n\n-- If multiple WHERE columns:\nALTER TABLE " + a.table + " ADD INDEX idx_<col1_col2> (<col1>, <col2>);"
+        });
+    });
+
+    joinBuf.forEach(function(a) {
+        recs.push({
+            cls: "ri-critical", icon: "[!]",
+            title: a.table + " -- JOIN with no index (Block Nested Loop)",
+            desc: "The join to " + a.table + " has no index on the join key. MySQL buffers rows and does a nested loop scan. Add an index on the foreign key column.",
+            code: "-- Add index on the join key column:\nALTER TABLE " + a.table + " ADD INDEX idx_fk_<column> (<join_key_column>);"
+        });
+    });
+
+    fileSorts.forEach(function(a) {
+        recs.push({
+            cls: "ri-high", icon: "[~]",
+            title: a.table + " -- Using filesort (ORDER BY cannot use index)",
+            desc: "MySQL cannot use the index for sorting. The sort column(s) are not in the index, or the WHERE and ORDER BY columns are on different indexes.",
+            code: "-- Create a composite index covering both WHERE and ORDER BY:\nALTER TABLE " + a.table + " ADD INDEX idx_where_sort (<where_col>, <order_by_col>);\n-- Column order matters: equality columns first, then range/sort column."
+        });
+    });
+
+    tmpTables.forEach(function(a) {
+        recs.push({
+            cls: "ri-high", icon: "[~]",
+            title: a.table + " -- Using temporary (GROUP BY or DISTINCT)",
+            desc: "MySQL creates a temporary table for GROUP BY or DISTINCT processing. An index on the GROUP BY columns can eliminate this.",
+            code: "-- Index on GROUP BY columns:\nALTER TABLE " + a.table + " ADD INDEX idx_groupby (<group_by_col1>, <group_by_col2>);"
+        });
+    });
+
+    if (totalRows > 1e8 && recs.length === 0) {
+        recs.push({
+            cls: "ri-high", icon: "[~]",
+            title: "High estimated row product across joins (" + (totalRows/1e6).toFixed(0) + "M)",
+            desc: "The product of estimated rows across all joins is very high. Even with indexes, consider reducing result set size with more selective WHERE conditions or pagination (LIMIT with cursor).",
+            code: "-- Use cursor-based pagination instead of OFFSET:\n-- Bad: SELECT ... ORDER BY id LIMIT 1000 OFFSET 50000\n-- Good: SELECT ... WHERE id > ? ORDER BY id LIMIT 1000"
+        });
+    }
+
+    if (recs.length === 0) {
+        recs.push({
+            cls: "ri-medium", icon: "[i]",
+            title: "Query plan looks well-optimized",
+            desc: "All tables use index access. No full scans, filesorts, or join buffers detected. Monitor SHOW STATUS LIKE 'Handler_read%' in production to confirm.",
+            code: null
+        });
+    }
+
+    return recs;
+}
+
+// ── Render one row card ───────────────────────────────────
+function renderRowCard(a, rowIdx) {
+    var sevClass = "sev-" + a.sev;
+
+    // columns
+    function colVal(v, goodFn) {
+        if (!v || v === "NULL" || v === "null") { return "<span class=\"er-col-val cv-null\">NULL</span>"; }
+        var cls = goodFn ? goodFn(v) : "";
+        return "<span class=\"er-col-val " + cls + "\">" + v + "</span>";
+    }
+
+    function keyClass(v) {
+        if (!v || v === "NULL") { return "cv-bad"; }
+        return "cv-good";
+    }
+
+    function filteredClass(v) {
+        var n = parseFloat(v);
+        if (n >= 80) { return "cv-good"; }
+        if (n >= 30) { return "cv-warn"; }
+        return "cv-bad";
+    }
+
+    var colsHTML =
+        "<div class=\"er-cols-grid\">" +
+            "<div class=\"er-col\"><span class=\"er-col-name\">select_type</span>" + colVal(a.selectType) + "</div>" +
+            "<div class=\"er-col\"><span class=\"er-col-name\">key used</span>" + colVal(a.key, keyClass) + "</div>" +
+            "<div class=\"er-col\"><span class=\"er-col-name\">possible_keys</span>" + colVal(a.possKeys) + "</div>" +
+            "<div class=\"er-col\"><span class=\"er-col-name\">key_len</span>" + colVal(a.keyLen) + "</div>" +
+            "<div class=\"er-col\"><span class=\"er-col-name\">ref</span>" + colVal(a.ref) + "</div>" +
+            "<div class=\"er-col\"><span class=\"er-col-name\">filtered</span>" + colVal(a.filtered, filteredClass) + "</div>" +
+        "</div>";
+
+    var extrasHTML = "";
+    if (a.extras.length > 0) {
+        extrasHTML = "<div class=\"er-extras\">" +
+            a.extras.map(function(ex) {
+                var cls = ex.sev === "bad" ? "ex-bad" : ex.sev === "warn" ? "ex-warn" : ex.sev === "good" ? "ex-good" : "";
+                var icon = ex.sev === "bad" ? "[!]" : ex.sev === "good" ? "[v]" : "[i]";
+                return "<div class=\"er-extra " + cls + "\">" + icon + " " + ex.msg + "</div>";
+            }).join("") +
+        "</div>";
+    }
+
+    return "<div class=\"explain-row-card " + sevClass + "\">" +
+        "<div class=\"er-header\">" +
+            "<span class=\"er-id\">Row " + (rowIdx+1) + "</span>" +
+            "<span class=\"er-table\">" + a.table + "</span>" +
+            "<span class=\"er-type-badge " + a.typeInfo.cls + "\">" + a.typeInfo.label + "</span>" +
+            "<span class=\"er-rows-est\">~" + a.rowEst + " rows</span>" +
+        "</div>" +
+        "<div class=\"er-body\">" +
+            colsHTML +
+            "<div class=\"er-explanation\">" + a.explanation + "</div>" +
+            extrasHTML +
+        "</div>" +
+    "</div>";
+}
+
+// ── Main ──────────────────────────────────────────────────
+function analyze() {
+    var src      = document.getElementById("codeInput").value;
+    var resultEl = document.getElementById("result");
+
+    if (!src.trim()) {
+        alert("Please paste your EXPLAIN output first.");
+        return;
+    }
+
+    var rows = parseExplain(src);
+
+    if (rows.length === 0) {
+        resultEl.innerHTML =
+            "<div class=\"divider\"></div>" +
+            "<div style=\"font-family:var(--font-mono);font-size:.82rem;color:var(--red);padding:12px 16px;background:var(--red-dim);border:1px solid rgba(239,68,68,.2);border-radius:var(--radius)\">Could not parse EXPLAIN output. Paste the full tabular output (with | column separators) or vertical format (key: value). See samples above.</div>";
+        resultEl.classList.add("visible");
+        return;
+    }
+
+    var analyses = rows.map(function(r, i) { return analyzeRow(r, i); });
+    var recs     = buildRecs(analyses);
+
+    var badCount  = analyses.filter(function(a) { return a.sev === "bad"; }).length;
+    var warnCount = analyses.filter(function(a) { return a.sev === "warn"; }).length;
+    var goodCount = analyses.filter(function(a) { return a.sev === "good" || a.sev === "info"; }).length;
+    var totalRowProd = analyses.reduce(function(s, a) { return s * Math.max(a.rowNum || 1, 1); }, 1);
+
+    var summaryHTML =
+        "<div class=\"summary-row\">" +
+        (badCount  > 0 ? "<div class=\"sum-pill pill-bad\">"  + badCount  + " critical</div>" : "") +
+        (warnCount > 0 ? "<div class=\"sum-pill pill-warn\">" + warnCount + " warning</div>"  : "") +
+        (goodCount > 0 ? "<div class=\"sum-pill pill-good\">" + goodCount + " good</div>"     : "") +
+        "<div class=\"sum-pill pill-info\">" + analyses.length + " table" + (analyses.length !== 1 ? "s" : "") + "</div>" +
+        "<div class=\"sum-pill pill-info\">~" + (totalRowProd >= 1e6 ? (totalRowProd/1e6).toFixed(0)+"M" : totalRowProd >= 1e3 ? (totalRowProd/1e3).toFixed(0)+"K" : totalRowProd) + " row product</div>" +
+        "</div>";
+
+    var rowCardsHTML =
+        "<div class=\"explain-rows\">" +
+        analyses.map(function(a, i) { return renderRowCard(a, i); }).join("") +
+        "</div>";
+
+    var recsHTML =
+        "<div class=\"rec-list\">" +
+        recs.map(function(r) {
+            return "<div class=\"rec-item " + r.cls + "\">" +
+                "<span class=\"ri-icon\">" + r.icon + "</span>" +
+                "<div class=\"ri-body\">" +
+                    "<div class=\"ri-title\">" + r.title + "</div>" +
+                    "<div class=\"ri-desc\">" + r.desc + "</div>" +
+                    (r.code ? "<pre class=\"ri-code\">" + r.code + "</pre>" : "") +
+
+            "</div>" +
+        "</div>";
+    }).join("") +
+    "</div>";
+
+resultEl.innerHTML =
+    "<div class=\"divider\"></div>" +
+    summaryHTML +
+    rowCardsHTML +
+    "<div class=\"divider\"></div>" +
+    "<div style=\"font-family:var(--font-mono);font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--muted);margin-bottom:12px\">Recommendations</div>" +
+    recsHTML;
+
+resultEl.classList.add("visible");
+resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+
+
+}
+</script>
+
 </body>
 </html>
