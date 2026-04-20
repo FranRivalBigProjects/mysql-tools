@@ -1,19 +1,1063 @@
-<html>
+<!DOCTYPE html>
+
+<html lang="en">
 <head>
-<meta charset='UTF-8'>
-<title>MySQL Query Formatter</title>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
-<link rel='stylesheet' href='styles.css'>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+<title>MySQL Query Formatter – Format & Beautify SQL Online Free</title>
+<meta name="description" content="Format and beautify MySQL queries online. Paste minified or messy SQL and get clean, properly indented SQL with syntax highlighting. Supports SELECT, INSERT, UPDATE, DELETE, CREATE TABLE, and subqueries.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg:         #020617;
+    --surface:    #080f1e;
+    --surface-2:  #0d1829;
+    --border:     #162035;
+    --accent:     #f59e0b;
+    --accent-dim: rgba(245,158,11,.07);
+    --green:      #22c55e;
+    --green-dim:  rgba(34,197,94,.08);
+    --blue:       #38bdf8;
+    --blue-dim:   rgba(56,189,248,.08);
+    --purple:     #a78bfa;
+    --yellow:     #fbbf24;
+    --red:        #f87171;
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+
+    --font-display: "Space Grotesk", sans-serif;
+    --font-mono:    "Space Mono", monospace;
+    --radius:    8px;
+    --radius-lg: 16px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(245,158,11,.012) 40px, rgba(245,158,11,.012) 41px);
+    pointer-events: none; z-index: 0;
+}
+
+.wrapper {
+    position: relative; z-index: 1;
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+}
+
+nav {
+    position: relative; z-index: 2;
+    padding: 18px 24px;
+    max-width: 1080px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+nav a {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+}
+
+nav a:hover { color: var(--accent); }
+nav a::before { content: "<-"; }
+
+header {
+    padding: 36px 0 32px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+}
+
+.header-chip {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(34,197,94,.2);
+    border-radius: 4px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+
+header h1 {
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+}
+
+header h1 .acc { color: var(--green); }
+header p { font-size: .9rem; color: var(--muted); font-weight: 300; max-width: 560px; }
+
+.tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--green);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    margin: 32px 0;
+    animation: fadeUp .5s .08s ease both;
+}
+
+/* OPTIONS ROW */
+.options-bar {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+    padding-bottom: 18px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+}
+
+.opt-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.opt-label {
+    font-family: var(--font-mono);
+    font-size: .58rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.radio-row { display: flex; gap: 6px; }
+
+.radio-btn {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    letter-spacing: .03em;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: all var(--transition);
+    user-select: none;
+    white-space: nowrap;
+}
+
+.radio-btn.active { color: var(--green); border-color: rgba(34,197,94,.4); background: var(--green-dim); }
+.radio-btn:hover:not(.active) { color: var(--text); }
+
+/* SAMPLES */
+.samples-row {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.sample-btn {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.sample-btn:hover { color: var(--accent); border-color: rgba(245,158,11,.3); }
+
+/* DUAL EDITOR */
+.editors-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+.pane { display: flex; flex-direction: column; gap: 8px; }
+
+.pane-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+}
+
+.pane-label {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+
+.pane-label .dot { width: 6px; height: 6px; border-radius: 50%; }
+.dot-in  { background: var(--yellow); }
+.dot-out { background: var(--green); }
+
+.btn-small {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 3px 10px;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.btn-small:hover { color: var(--green); border-color: rgba(34,197,94,.3); }
+
+.editor-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    transition: border-color var(--transition), box-shadow var(--transition);
+    flex: 1;
+}
+
+.editor-wrap:focus-within {
+    border-color: rgba(245,158,11,.35);
+    box-shadow: 0 0 0 3px rgba(245,158,11,.07);
+}
+
+.editor-wrap.output-wrap { border-color: rgba(34,197,94,.2); }
+
+textarea {
+    display: block;
+    width: 100%;
+    min-height: 320px;
+    background: var(--surface-2);
+    border: none;
+    outline: none;
+    padding: 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.7;
+    resize: vertical;
+    tab-size: 4;
+}
+
+textarea::placeholder { color: var(--muted); opacity: .4; }
+
+/* highlighted output */
+.sql-output {
+    display: block;
+    width: 100%;
+    min-height: 320px;
+    background: var(--surface-2);
+    padding: 14px;
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.7;
+    white-space: pre;
+    overflow-x: auto;
+    cursor: default;
+}
+
+/* SQL Syntax colors */
+.sql-output .kw   { color: #7dd3fc; font-weight: 700; }   /* keywords */
+.sql-output .fn   { color: #fbbf24; }                      /* functions */
+.sql-output .str  { color: #86efac; }                      /* strings */
+.sql-output .num  { color: #fb923c; }                      /* numbers */
+.sql-output .cmt  { color: #475569; font-style: italic; }  /* comments */
+.sql-output .op   { color: #f472b6; }                      /* operators */
+.sql-output .tbl  { color: #e2e8f0; }                      /* table/column names */
+.sql-output .par  { color: #a78bfa; }                      /* parentheses */
+.sql-output .punc { color: #94a3b8; }                      /* commas, semicolons */
+
+/* BTN */
+.btn-run {
+    width: 100%;
+    background: var(--green);
+    color: #020617;
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px 24px;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn-run:hover { background: #4ade80; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(34,197,94,.3); }
+.btn-run:active { transform: translateY(0); }
+
+/* STATS BAR */
+.stats-bar {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-top: 14px;
+}
+
+.stat-pill {
+    font-family: var(--font-mono);
+    font-size: .68rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: 100px;
+    padding: 3px 12px;
+}
+
+.stat-pill span { color: var(--green); }
+
+/* info */
+.info-section {
+    padding: 36px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .15s ease both;
+}
+
+.info-section h2 { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 14px; }
+.info-section p  { font-size: .875rem; color: var(--muted); font-weight: 300; margin-bottom: 10px; max-width: 640px; }
+.info-section ul { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.info-section ul li { display: flex; gap: 10px; font-family: var(--font-mono); font-size: .76rem; color: var(--text); }
+.info-section ul li::before { content: "->"; color: var(--accent); flex-shrink: 0; }
+
+footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    max-width: 1080px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+footer p { font-family: var(--font-mono); font-size: .68rem; color: var(--muted); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 640px) {
+    .tool-card { padding: 18px; }
+    .editors-row { grid-template-columns: 1fr; }
+    .options-bar { gap: 16px; }
+}
+</style>
+
 </head>
 <body>
-<div class='container'>
-<h1>MySQL Query Formatter</h1>
-<textarea id='input'></textarea>
-<input id='value' placeholder='Optional metric'>
-<button onclick='run()'>Run</button>
-<div id='res' class='result'></div>
+
+<nav class="wrapper">
+    <a href="/mysql-tools/">MySQL Tools</a>
+</nav>
+
+<div class="wrapper">
+
+<header>
+    <div class="header-chip">SQL Formatter</div>
+    <h1>MySQL Query <span class="acc">Formatter</span></h1>
+    <p>Paste minified or messy MySQL SQL on the left. The formatter produces clean, properly indented SQL with syntax highlighting on the right — ready to copy.</p>
+</header>
+
+<div class="tool-card">
+
+<!-- OPTIONS -->
+<div class="options-bar">
+
+    <div class="opt-group">
+        <span class="opt-label">Indent style</span>
+        <div class="radio-row" id="indentGroup">
+            <div class="radio-btn active" data-val="2"  onclick="setOpt(this,'indent')">2 spaces</div>
+            <div class="radio-btn"        data-val="4"  onclick="setOpt(this,'indent')">4 spaces</div>
+            <div class="radio-btn"        data-val="tab" onclick="setOpt(this,'indent')">Tab</div>
+        </div>
+    </div>
+
+    <div class="opt-group">
+        <span class="opt-label">Keyword case</span>
+        <div class="radio-row" id="caseGroup">
+            <div class="radio-btn active" data-val="upper" onclick="setOpt(this,'case')">UPPERCASE</div>
+            <div class="radio-btn"        data-val="lower" onclick="setOpt(this,'case')">lowercase</div>
+            <div class="radio-btn"        data-val="keep"  onclick="setOpt(this,'case')">Keep as-is</div>
+        </div>
+    </div>
+
+    <div class="opt-group">
+        <span class="opt-label">Commas</span>
+        <div class="radio-row" id="commaGroup">
+            <div class="radio-btn active" data-val="end"   onclick="setOpt(this,'comma')">End of line</div>
+            <div class="radio-btn"        data-val="start" onclick="setOpt(this,'comma')">Start of line</div>
+        </div>
+    </div>
+
 </div>
-<script src='script.js'></script>
+
+<!-- SAMPLES -->
+<div class="samples-row">
+    <span style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);align-self:center">Samples:</span>
+    <button class="sample-btn" onclick="loadSample('minified')">Minified SELECT</button>
+    <button class="sample-btn" onclick="loadSample('join')">Complex JOIN</button>
+    <button class="sample-btn" onclick="loadSample('create')">CREATE TABLE</button>
+    <button class="sample-btn" onclick="loadSample('subquery')">Subquery</button>
+    <button class="sample-btn" onclick="loadSample('insert')">INSERT batch</button>
+</div>
+
+<!-- DUAL EDITOR -->
+<div class="editors-row">
+
+    <div class="pane">
+        <div class="pane-header">
+            <span class="pane-label"><span class="dot dot-in"></span>SQL Input</span>
+            <div style="display:flex;gap:6px">
+                <button class="btn-small" onclick="clearInput()">Clear</button>
+            </div>
+        </div>
+        <div class="editor-wrap">
+            <textarea id="sqlInput" placeholder="-- Paste your MySQL query here...
+
+SELECT u.id,u.name,o.total FROM users u JOIN orders o ON u.id=o.user_id WHERE o.status=‘pending’ AND u.active=1 ORDER BY o.total DESC LIMIT 10;”></textarea>
+</div>
+</div>
+
+    <div class="pane">
+        <div class="pane-header">
+            <span class="pane-label"><span class="dot dot-out"></span>Formatted SQL</span>
+            <button class="btn-small" id="copyBtn" onclick="copyOutput()">Copy</button>
+        </div>
+        <div class="editor-wrap output-wrap">
+            <div class="sql-output" id="sqlOutput"><span style="color:var(--muted);font-style:italic">-- Formatted output will appear here...</span></div>
+        </div>
+    </div>
+
+</div>
+
+<button class="btn-run" onclick="format()">Format SQL</button>
+
+<div class="stats-bar" id="statsBar" style="display:none"></div>
+
+
+</div>
+
+<div class="info-section">
+    <h2>What This Formatter Handles</h2>
+    <p>The formatter restructures SQL for maximum readability without changing query semantics.</p>
+    <ul>
+        <li>SELECT with multiple columns -- each column on its own line</li>
+        <li>JOIN clauses -- each JOIN on a new line with ON condition indented</li>
+        <li>WHERE clauses -- each AND/OR condition on its own line</li>
+        <li>Subqueries -- indented relative to parent query</li>
+        <li>CREATE TABLE -- each column definition on its own line</li>
+        <li>INSERT with multiple values -- each value tuple on its own line</li>
+        <li>Comments (-- and /* */) -- preserved in output</li>
+    </ul>
+</div>
+
+</div>
+
+<footer class="wrapper">
+    <p>MySQL Tools -- Query Formatter</p>
+</footer>
+
+<script>
+var opts = { indent: "2", kcase: "upper", comma: "end" };
+
+var SAMPLES = {
+    minified:
+"SELECT u.id,u.name,u.email,o.order_id,o.total,o.status,o.created_at FROM users u LEFT JOIN orders o ON u.id=o.user_id WHERE o.status='pending' AND u.active=1 AND o.total>100 ORDER BY o.total DESC LIMIT 10 OFFSET 20;",
+
+    join:
+"select u.id, u.first_name, u.last_name, u.email, p.plan_name, p.price, s.started_at, s.expires_at, count(i.id) as invoice_count, sum(i.amount) as total_paid from users u inner join subscriptions s on s.user_id = u.id inner join plans p on p.id = s.plan_id left join invoices i on i.subscription_id = s.id where s.status = 'active' and s.expires_at > now() and p.price > 0 group by u.id, p.id, s.id having total_paid > 0 order by total_paid desc limit 50;",
+
+    create:
+"CREATE TABLE IF NOT EXISTS `order_items` (`id` bigint unsigned NOT NULL AUTO_INCREMENT,`order_id` bigint unsigned NOT NULL,`product_id` bigint unsigned NOT NULL,`quantity` int NOT NULL DEFAULT '1',`unit_price` decimal(10,2) NOT NULL,`discount` decimal(5,2) DEFAULT NULL,`created_at` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP,PRIMARY KEY (`id`),KEY `idx_order_id` (`order_id`),KEY `idx_product_id` (`product_id`),CONSTRAINT `fk_items_order` FOREIGN KEY (`order_id`) REFERENCES `orders` (`id`) ON DELETE CASCADE) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;",
+
+    subquery:
+"SELECT p.name, p.price, (SELECT AVG(price) FROM products WHERE category_id = p.category_id) as avg_category_price, (SELECT COUNT(*) FROM order_items oi WHERE oi.product_id = p.id) as times_ordered FROM products p WHERE p.price > (SELECT AVG(price) FROM products) AND p.category_id IN (SELECT id FROM categories WHERE active = 1) ORDER BY times_ordered DESC;",
+
+    insert:
+"INSERT INTO audit_log (user_id,action,table_name,record_id,old_value,new_value,created_at) VALUES (42,'UPDATE','orders',1001,'{\"status\":\"pending\"}','{\"status\":\"shipped\"}',NOW()),(43,'DELETE','users',502,NULL,NULL,NOW()),(44,'INSERT','products',NULL,NULL,'{\"name\":\"Widget\",\"price\":9.99}',NOW());"
+};
+
+function setOpt(el, group) {
+    var grpMap = { indent: "indentGroup", kcase: "caseGroup", comma: "commaGroup" };
+    var grpId  = grpMap[group] || group + "Group";
+    document.getElementById(grpId).querySelectorAll(".radio-btn").forEach(function(b) { b.classList.remove("active"); });
+    el.classList.add("active");
+    if (group === "indent") { opts.indent = el.dataset.val; }
+    if (group === "case")   { opts.kcase  = el.dataset.val; }
+    if (group === "comma")  { opts.comma  = el.dataset.val; }
+}
+
+function loadSample(key) {
+    document.getElementById("sqlInput").value = SAMPLES[key];
+}
+
+function clearInput() {
+    document.getElementById("sqlInput").value = "";
+    document.getElementById("sqlOutput").innerHTML = "<span style=\"color:var(--muted);font-style:italic\">-- Formatted output will appear here...</span>";
+    document.getElementById("statsBar").style.display = "none";
+}
+
+function copyOutput() {
+    var el  = document.getElementById("sqlOutput");
+    var txt = el.innerText || el.textContent;
+    navigator.clipboard.writeText(txt)
+        .then(function() {
+            document.getElementById("copyBtn").textContent = "Copied!";
+            setTimeout(function() { document.getElementById("copyBtn").textContent = "Copy"; }, 1800);
+        })
+        .catch(function() {});
+}
+
+// ── SQL Keywords ─────────────────────────────────────────
+var KEYWORDS = [
+    "SELECT","FROM","WHERE","JOIN","INNER JOIN","LEFT JOIN","RIGHT JOIN","FULL JOIN",
+    "OUTER JOIN","CROSS JOIN","ON","AND","OR","NOT","IN","LIKE","BETWEEN","IS","NULL",
+    "IS NULL","IS NOT NULL","ORDER BY","GROUP BY","HAVING","LIMIT","OFFSET","UNION",
+    "UNION ALL","INSERT","INTO","VALUES","UPDATE","SET","DELETE","CREATE","TABLE",
+    "ALTER","DROP","INDEX","PRIMARY KEY","FOREIGN KEY","REFERENCES","CONSTRAINT",
+    "DEFAULT","NOT NULL","AUTO_INCREMENT","UNIQUE","CHECK","IF EXISTS","IF NOT EXISTS",
+    "AS","DISTINCT","ALL","CASE","WHEN","THEN","ELSE","END","EXISTS","WITH",
+    "RECURSIVE","PARTITION BY","OVER","ROW_NUMBER","RANK","DENSE_RANK",
+    "ENGINE","CHARSET","COLLATE","COMMENT","MODIFY","ADD","COLUMN","ON DELETE",
+    "ON UPDATE","CASCADE","RESTRICT","SET NULL","NO ACTION","EXPLAIN","PROCEDURE",
+    "FUNCTION","BEGIN","COMMIT","ROLLBACK","START TRANSACTION","SHOW","DESCRIBE"
+];
+
+var SQL_FUNCTIONS = [
+    "COUNT","SUM","AVG","MIN","MAX","NOW","CURDATE","CURTIME","DATE","YEAR","MONTH",
+    "DAY","HOUR","MINUTE","SECOND","DATEDIFF","DATE_FORMAT","STR_TO_DATE","COALESCE",
+    "IFNULL","NULLIF","IF","CONCAT","CONCAT_WS","SUBSTRING","SUBSTR","LEFT","RIGHT",
+    "TRIM","LTRIM","RTRIM","UPPER","LOWER","LENGTH","CHAR_LENGTH","REPLACE","REGEXP",
+    "REGEXP_REPLACE","JSON_EXTRACT","JSON_VALUE","CAST","CONVERT","ROUND","FLOOR",
+    "CEIL","CEILING","ABS","MOD","RAND","UUID","MD5","SHA1","SHA2","GROUP_CONCAT",
+    "FIND_IN_SET","FIELD","LAST_INSERT_ID","ROW_COUNT","DATABASE","USER","VERSION"
+];
+
+// ── Syntax highlighter ───────────────────────────────────
+function highlight(sql) {
+    var result = "";
+    var i = 0;
+    var len = sql.length;
+
+    function esc(s) {
+        return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+    }
+
+    while (i < len) {
+        var ch = sql[i];
+
+        // Comment -- to end of line
+        if (ch === "-" && sql[i+1] === "-") {
+            var end = sql.indexOf("\n", i);
+            if (end === -1) { end = len; }
+            result += "<span class=\"cmt\">" + esc(sql.slice(i, end)) + "</span>";
+            i = end;
+            continue;
+        }
+
+        // Comment /* ... */
+        if (ch === "/" && sql[i+1] === "*") {
+            var end2 = sql.indexOf("*/", i+2);
+            if (end2 === -1) { end2 = len - 2; }
+            result += "<span class=\"cmt\">" + esc(sql.slice(i, end2+2)) + "</span>";
+            i = end2 + 2;
+            continue;
+        }
+
+        // Strings ' ... '
+        if (ch === "'") {
+            var j = i + 1;
+            while (j < len && !(sql[j] === "'" && sql[j-1] !== "\\")) { j++; }
+            result += "<span class=\"str\">" + esc(sql.slice(i, j+1)) + "</span>";
+            i = j + 1;
+            continue;
+        }
+
+        // Backtick identifiers
+        if (ch === "`") {
+            var k = sql.indexOf("`", i+1);
+            if (k === -1) { k = len - 1; }
+            result += "<span class=\"tbl\">" + esc(sql.slice(i, k+1)) + "</span>";
+            i = k + 1;
+            continue;
+        }
+
+        // Numbers
+        if (/\d/.test(ch) && (i === 0 || /[\s,(+\-*\/=<>]/.test(sql[i-1]))) {
+            var ni = i;
+            while (ni < len && /[\d.]/.test(sql[ni])) { ni++; }
+            result += "<span class=\"num\">" + esc(sql.slice(i, ni)) + "</span>";
+            i = ni;
+            continue;
+        }
+
+        // Operators
+        if ("=<>!".indexOf(ch) !== -1) {
+            var op = ch;
+            if (i+1 < len && "=><".indexOf(sql[i+1]) !== -1) { op += sql[i+1]; i++; }
+            result += "<span class=\"op\">" + esc(op) + "</span>";
+            i++;
+            continue;
+        }
+
+        // Parentheses
+        if (ch === "(" || ch === ")") {
+            result += "<span class=\"par\">" + esc(ch) + "</span>";
+            i++;
+            continue;
+        }
+
+        // Commas, semicolons
+        if (ch === "," || ch === ";") {
+            result += "<span class=\"punc\">" + esc(ch) + "</span>";
+            i++;
+            continue;
+        }
+
+        // Words (keywords, functions, identifiers)
+        if (/[a-zA-Z_]/.test(ch)) {
+            var wi = i;
+            while (wi < len && /[\w]/.test(sql[wi])) { wi++; }
+            var word = sql.slice(i, wi);
+            var wordUp = word.toUpperCase();
+
+            // Try multi-word keywords (up to 3 words)
+            var matched = false;
+            for (var mw = 3; mw >= 1; mw--) {
+                var candidate = word;
+                var lookAhead = wi;
+                for (var extra = 1; extra < mw; extra++) {
+                    while (lookAhead < len && sql[lookAhead] === " ") { lookAhead++; }
+                    var nextWi = lookAhead;
+                    while (nextWi < len && /[\w]/.test(sql[nextWi])) { nextWi++; }
+                    candidate += " " + sql.slice(lookAhead, nextWi);
+                    lookAhead = nextWi;
+                }
+                if (KEYWORDS.indexOf(candidate.toUpperCase()) !== -1) {
+                    result += "<span class=\"kw\">" + esc(candidate) + "</span>";
+                    i = lookAhead;
+                    matched = true;
+                    break;
+                }
+            }
+            if (matched) { continue; }
+
+            if (SQL_FUNCTIONS.indexOf(wordUp) !== -1) {
+                result += "<span class=\"fn\">" + esc(word) + "</span>";
+            } else {
+                result += "<span class=\"tbl\">" + esc(word) + "</span>";
+            }
+            i = wi;
+            continue;
+        }
+
+        result += esc(ch);
+        i++;
+    }
+
+    return result;
+}
+
+// ── SQL Formatter ────────────────────────────────────────
+var INDENT = "  ";
+var KW_NEWLINE_BEFORE = [
+    "SELECT","FROM","WHERE","JOIN","INNER JOIN","LEFT JOIN","RIGHT JOIN",
+    "FULL JOIN","OUTER JOIN","CROSS JOIN","ON","ORDER BY","GROUP BY",
+    "HAVING","LIMIT","OFFSET","UNION","UNION ALL","INSERT INTO","VALUES",
+    "UPDATE","SET","DELETE FROM","CREATE TABLE","ALTER TABLE"
+];
+
+function getIndent(level) {
+    var i = opts.indent;
+    var unit = i === "tab" ? "\t" : i === "4" ? "    " : "  ";
+    var result = "";
+    for (var j = 0; j < level; j++) { result += unit; }
+    return result;
+}
+
+function applyCase(word) {
+    if (opts.kcase === "upper") { return word.toUpperCase(); }
+    if (opts.kcase === "lower") { return word.toLowerCase(); }
+    return word;
+}
+
+function tokenize(sql) {
+    var tokens = [];
+    var i = 0;
+    var len = sql.length;
+
+    while (i < len) {
+        // Skip whitespace — collect it
+        if (/\s/.test(sql[i])) {
+            var ws = "";
+            while (i < len && /\s/.test(sql[i])) { ws += sql[i]; i++; }
+            tokens.push({ type: "ws", val: ws });
+            continue;
+        }
+
+        // Comment --
+        if (sql[i] === "-" && sql[i+1] === "-") {
+            var end = sql.indexOf("\n", i);
+            if (end === -1) { end = len; }
+            tokens.push({ type: "comment", val: sql.slice(i, end) });
+            i = end;
+            continue;
+        }
+
+        // Comment /* */
+        if (sql[i] === "/" && sql[i+1] === "*") {
+            var end2 = sql.indexOf("*/", i+2);
+            if (end2 === -1) { end2 = len - 2; }
+            tokens.push({ type: "comment", val: sql.slice(i, end2+2) });
+            i = end2 + 2;
+            continue;
+        }
+
+        // String
+        if (sql[i] === "'") {
+            var j = i + 1;
+            while (j < len && !(sql[j] === "'" && sql[j-1] !== "\\")) { j++; }
+            tokens.push({ type: "string", val: sql.slice(i, j+1) });
+            i = j + 1;
+            continue;
+        }
+
+        // Backtick
+        if (sql[i] === "`") {
+            var k = sql.indexOf("`", i+1);
+            if (k === -1) { k = len - 1; }
+            tokens.push({ type: "ident", val: sql.slice(i, k+1) });
+            i = k + 1;
+            continue;
+        }
+
+        // Punctuation
+        if ("(),;".indexOf(sql[i]) !== -1) {
+            tokens.push({ type: "punct", val: sql[i] });
+            i++;
+            continue;
+        }
+
+        // Word
+        if (/[\w]/.test(sql[i])) {
+            var wi = i;
+            while (wi < len && /[\w]/.test(sql[wi])) { wi++; }
+            tokens.push({ type: "word", val: sql.slice(i, wi) });
+            i = wi;
+            continue;
+        }
+
+        tokens.push({ type: "other", val: sql[i] });
+        i++;
+    }
+
+    return tokens.filter(function(t) { return t.type !== "ws"; });
+}
+
+function formatSQL(sql) {
+    sql = sql.trim();
+    var lines = [];
+    var level = 0;
+    var i = 0;
+
+    // Detect statement type
+    var upper = sql.toUpperCase().trim();
+    var isCreate = upper.startsWith("CREATE");
+    var isInsert = upper.startsWith("INSERT");
+
+    var tokens = tokenize(sql);
+    var n = tokens.length;
+    var cur = "";
+
+    function pushLine(content) {
+        if (content.trim()) { lines.push(getIndent(level) + content.trim()); }
+    }
+
+    function matchKeyword(idx) {
+        // Try up to 3-word keywords
+        for (var klen = 3; klen >= 1; klen--) {
+            var candidate = "";
+            var lookAhead = idx;
+            for (var ki = 0; ki < klen; ki++) {
+                if (lookAhead >= n || tokens[lookAhead].type !== "word") { break; }
+                candidate += (ki > 0 ? " " : "") + tokens[lookAhead].val.toUpperCase();
+                lookAhead++;
+            }
+            if (KW_NEWLINE_BEFORE.indexOf(candidate) !== -1) {
+                return { kw: candidate, advance: klen };
+            }
+        }
+        return null;
+    }
+
+    function matchSubKw(val) {
+        var up = val.toUpperCase();
+        return ["AND","OR","ON","HAVING","LIMIT","OFFSET"].indexOf(up) !== -1;
+    }
+
+    while (i < n) {
+        var tok = tokens[i];
+
+        if (tok.type === "comment") {
+            pushLine(cur);
+            cur = "";
+            pushLine(tok.val);
+            i++;
+            continue;
+        }
+
+        if (tok.type === "word") {
+            var m = matchKeyword(i);
+            if (m) {
+                pushLine(cur);
+                cur = "";
+
+                var kwDisplay = applyCase(m.kw.replace(/ /g, " "));
+                var kw = m.kw;
+
+                if (kw === "SELECT") {
+                    cur = kwDisplay;
+                    i += m.advance;
+                    // collect columns until FROM
+                    var cols = [];
+                    var colBuf = "";
+                    var depth = 0;
+                    while (i < n) {
+                        var ct = tokens[i];
+                        if (ct.type === "punct" && ct.val === "(") { depth++; colBuf += ct.val; i++; continue; }
+                        if (ct.type === "punct" && ct.val === ")") { depth--; colBuf += ct.val; i++; continue; }
+                        if (depth === 0 && ct.type === "punct" && ct.val === ",") {
+                            cols.push(colBuf.trim()); colBuf = ""; i++; continue;
+                        }
+                        if (depth === 0 && ct.type === "word" && ct.val.toUpperCase() === "FROM") { break; }
+                        colBuf += (colBuf ? " " : "") + ct.val; i++;
+                    }
+                    if (colBuf.trim()) { cols.push(colBuf.trim()); }
+
+                    var indU = getIndent(level + 1);
+                    if (opts.comma === "end") {
+                        for (var ci = 0; ci < cols.length; ci++) {
+                            var sep = ci < cols.length - 1 ? "," : "";
+                            lines.push(indU + cols[ci] + sep);
+                        }
+                    } else {
+                        for (var ci2 = 0; ci2 < cols.length; ci2++) {
+                            var sep2 = ci2 > 0 ? ", " : "  ";
+                            lines.push(indU + (ci2 === 0 ? "" : ", ") + cols[ci2]);
+                        }
+                    }
+                    cur = "";
+                    continue;
+                }
+
+                if (kw === "VALUES") {
+                    lines.push(kwDisplay);
+                    i += m.advance;
+                    // collect each (...) as a separate line
+                    while (i < n) {
+                        var vt = tokens[i];
+                        if (vt.type === "punct" && vt.val === "(") {
+                            var vbuf = "(";
+                            i++;
+                            var vd = 1;
+                            while (i < n && vd > 0) {
+                                if (tokens[i].val === "(") { vd++; }
+                                if (tokens[i].val === ")") {
+                                    vd--;
+                                    if (vd === 0) { vbuf += ")"; i++; break; }
+                                }
+                                vbuf += tokens[i].val + " ";
+                                i++;
+                            }
+                            // trailing comma?
+                            var comma = (i < n && tokens[i].type === "punct" && tokens[i].val === ",") ? "," : "";
+                            if (comma) { i++; }
+                            lines.push(getIndent(level + 1) + vbuf.replace(/ \)/g,")") + comma);
+                        } else { i++; }
+                        if (i >= n || tokens[i].type === "punct" && tokens[i].val === ";") { break; }
+                    }
+                    cur = "";
+                    continue;
+                }
+
+                if (kw === "WHERE") {
+                    lines.push(kwDisplay);
+                    i += m.advance;
+                    // collect conditions
+                    var wbuf = "";
+                    var wd = 0;
+                    while (i < n) {
+                        var wt = tokens[i];
+                        if (wt.type === "punct" && wt.val === "(") { wd++; wbuf += "("; i++; continue; }
+                        if (wt.type === "punct" && wt.val === ")") {
+                            wd--;
+                            if (wd < 0) { wd = 0; break; }
+                            wbuf += ")"; i++; continue;
+                        }
+                        if (wd === 0 && wt.type === "word") {
+                            var wup = wt.val.toUpperCase();
+                            // check for multi-word keyword that ends WHERE
+                            var wm = matchKeyword(i);
+                            if (wm && KW_NEWLINE_BEFORE.indexOf(wm.kw) !== -1 && wm.kw !== "AND" && wm.kw !== "OR") {
+                                if (wbuf.trim()) { lines.push(getIndent(level+1) + wbuf.trim()); wbuf = ""; }
+                                break;
+                            }
+                            if (wup === "AND" || wup === "OR") {
+                                if (wbuf.trim()) { lines.push(getIndent(level+1) + wbuf.trim()); }
+                                wbuf = applyCase(wt.val) + " "; i++; continue;
+                            }
+                        }
+                        wbuf += (wbuf.endsWith(" ") || wbuf === "" ? "" : " ") + wt.val;
+                        i++;
+                    }
+                    if (wbuf.trim()) { lines.push(getIndent(level+1) + wbuf.trim()); }
+                    cur = "";
+                    continue;
+                }
+
+                if (["JOIN","INNER JOIN","LEFT JOIN","RIGHT JOIN","FULL JOIN","OUTER JOIN","CROSS JOIN"].indexOf(kw) !== -1) {
+                    lines.push(kwDisplay);
+                    i += m.advance;
+                    var jbuf = "";
+                    while (i < n) {
+                        var jt = tokens[i];
+                        var jm = matchKeyword(i);
+                        if (jm && jm.kw !== "ON" && KW_NEWLINE_BEFORE.indexOf(jm.kw) !== -1) { break; }
+                        if (jt.type === "word" && jt.val.toUpperCase() === "ON") {
+                            if (jbuf.trim()) { lines.push(getIndent(level+1) + jbuf.trim()); }
+                            jbuf = applyCase("ON") + " ";
+                            i++; continue;
+                        }
+                        jbuf += (jbuf.endsWith(" ") || jbuf === "" ? "" : " ") + jt.val;
+                        i++;
+                    }
+                    if (jbuf.trim()) { lines.push(getIndent(level+1) + jbuf.trim()); }
+                    cur = "";
+                    continue;
+                }
+
+                // Generic keyword handling
+                if (cur.trim()) { pushLine(cur); cur = ""; }
+                cur = kwDisplay + " ";
+                i += m.advance;
+                continue;
+            }
+
+            // Sub-keywords AND/OR
+            if (matchSubKw(tok.val)) {
+                if (cur.trim()) { pushLine(cur); }
+                cur = applyCase(tok.val) + " ";
+                i++;
+                continue;
+            }
+        }
+
+        // Parens
+        if (tok.type === "punct") {
+            if (tok.val === "(") {
+                cur += "(";
+                i++;
+                continue;
+            }
+            if (tok.val === ")") {
+                cur += ")";
+                i++;
+                continue;
+            }
+            if (tok.val === ",") {
+                if (opts.comma === "end") {
+                    cur += ",";
+                } else {
+                    pushLine(cur + ",");
+                    cur = "";
+                }
+                i++;
+                continue;
+            }
+            if (tok.val === ";") {
+                pushLine(cur + ";");
+                cur = "";
+                i++;
+                continue;
+            }
+        }
+
+        cur += (cur && !cur.endsWith(" ") && !cur.endsWith("(") ? " " : "") + tok.val;
+        i++;
+    }
+
+    if (cur.trim()) { pushLine(cur); }
+
+    return lines.join("\n");
+}
+
+// ── Main ─────────────────────────────────────────────────
+function format() {
+    var src = document.getElementById("sqlInput").value;
+
+    if (!src.trim()) {
+        alert("Please paste a SQL query.");
+        return;
+    }
+
+    var formatted = "";
+    try {
+        formatted = formatSQL(src);
+    } catch(e) {
+        formatted = src; // fallback: return as-is
+    }
+
+    var highlighted = highlight(formatted);
+    document.getElementById("sqlOutput").innerHTML = highlighted;
+
+    // Stats
+    var inLines   = src.split("\n").length;
+    var outLines  = formatted.split("\n").length;
+    var inChars   = src.length;
+    var outChars  = formatted.length;
+
+    var statsBar = document.getElementById("statsBar");
+    statsBar.style.display = "flex";
+    statsBar.innerHTML =
+        "<div class=\"stat-pill\">Input: <span>" + inLines + " lines</span></div>" +
+        "<div class=\"stat-pill\">Output: <span>" + outLines + " lines</span></div>" +
+        "<div class=\"stat-pill\">Chars: <span>" + inChars + " → " + outChars + "</span></div>";
+}
+</script>
+
 </body>
 </html>
