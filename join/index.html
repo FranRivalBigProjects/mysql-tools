@@ -1,19 +1,797 @@
-<html>
+<!DOCTYPE html>
+
+<html lang="en">
 <head>
-<meta charset='UTF-8'>
-<title>MySQL Join Visualizer</title>
-<meta name='viewport' content='width=device-width, initial-scale=1.0'>
-    <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
-<link rel='stylesheet' href='styles.css'>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
+<title>MySQL JOIN Visualizer – Analyze JOIN Types, Cardinality & Performance Online</title>
+<meta name="description" content="Visualize MySQL JOIN queries with Venn diagrams. Detect JOIN type, analyze join cardinality, identify missing indexes on join keys, and get query rewrite suggestions for better performance.">
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
+<style>
+:root {
+    --bg:         #020617;
+    --surface:    #080f1e;
+    --surface-2:  #0d1829;
+    --border:     #162035;
+    --accent:     #f59e0b;
+    --accent-dim: rgba(245,158,11,.07);
+    --green:      #22c55e;
+    --green-dim:  rgba(34,197,94,.08);
+    --yellow:     #fbbf24;
+    --yellow-dim: rgba(251,191,36,.07);
+    --red:        #ef4444;
+    --red-dim:    rgba(239,68,68,.08);
+    --blue:       #38bdf8;
+    --blue-dim:   rgba(56,189,248,.08);
+    --teal:       #2dd4bf;
+    --orange:     #fb923c;
+    --text:       #e2e8f0;
+    --muted:      #64748b;
+
+    --font-display: "Space Grotesk", sans-serif;
+    --font-mono:    "Space Mono", monospace;
+    --radius:    8px;
+    --radius-lg: 16px;
+    --transition: 220ms cubic-bezier(.4,0,.2,1);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { scroll-behavior: smooth; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--font-display);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow-x: hidden;
+}
+
+body::before {
+    content: "";
+    position: fixed; inset: 0;
+    background-image: repeating-linear-gradient(-45deg, transparent, transparent 40px, rgba(245,158,11,.012) 40px, rgba(245,158,11,.012) 41px);
+    pointer-events: none; z-index: 0;
+}
+
+.wrapper {
+    position: relative; z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 0 24px;
+    width: 100%;
+    flex: 1;
+}
+
+nav {
+    position: relative; z-index: 2;
+    padding: 18px 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+nav a {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    letter-spacing: .06em;
+    color: var(--muted);
+    text-decoration: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: color var(--transition);
+}
+
+nav a:hover { color: var(--accent); }
+nav a::before { content: "<-"; }
+
+header {
+    padding: 36px 0 32px;
+    border-bottom: 1px solid var(--border);
+    animation: fadeUp .5s ease both;
+}
+
+.header-chip {
+    font-family: var(--font-mono);
+    font-size: 9px;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--teal);
+    background: rgba(45,212,191,.08);
+    border: 1px solid rgba(45,212,191,.2);
+    border-radius: 4px;
+    padding: 3px 10px;
+    display: inline-block;
+    margin-bottom: 14px;
+}
+
+header h1 {
+    font-size: clamp(1.3rem, 3vw, 2rem);
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: -.02em;
+    margin-bottom: 10px;
+}
+
+header h1 .acc { color: var(--teal); }
+header p { font-size: .9rem; color: var(--muted); font-weight: 300; max-width: 540px; }
+
+.tool-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-top: 2px solid var(--teal);
+    border-radius: var(--radius-lg);
+    padding: 28px;
+    margin: 32px 0;
+    animation: fadeUp .5s .08s ease both;
+}
+
+.samples-row {
+    display: flex;
+    gap: 7px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+}
+
+.sample-btn {
+    font-family: var(--font-mono);
+    font-size: .65rem;
+    color: var(--muted);
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 5px 12px;
+    cursor: pointer;
+    transition: color var(--transition), border-color var(--transition);
+}
+
+.sample-btn:hover { color: var(--accent); border-color: rgba(245,158,11,.3); }
+
+.editor-label {
+    font-family: var(--font-mono);
+    font-size: .62rem;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.editor-label::before {
+    content: "";
+    width: 5px; height: 5px;
+    border-radius: 50%;
+    background: var(--teal);
+}
+
+.editor-wrap {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 20px;
+    transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.editor-wrap:focus-within {
+    border-color: rgba(45,212,191,.4);
+    box-shadow: 0 0 0 3px rgba(45,212,191,.07);
+}
+
+textarea {
+    display: block;
+    width: 100%;
+    min-height: 180px;
+    background: var(--surface-2);
+    border: none;
+    outline: none;
+    padding: 14px;
+    color: var(--text);
+    font-family: var(--font-mono);
+    font-size: .78rem;
+    line-height: 1.65;
+    resize: vertical;
+    tab-size: 4;
+}
+
+textarea::placeholder { color: var(--muted); opacity: .4; }
+
+.btn-run {
+    width: 100%;
+    background: var(--teal);
+    color: #020617;
+    border: none;
+    border-radius: var(--radius);
+    padding: 13px 24px;
+    font-family: var(--font-mono);
+    font-size: .82rem;
+    font-weight: 700;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background var(--transition), transform var(--transition), box-shadow var(--transition);
+}
+
+.btn-run:hover { background: #5eead4; transform: translateY(-1px); box-shadow: 0 6px 20px rgba(45,212,191,.3); }
+.btn-run:active { transform: translateY(0); }
+
+#result { margin-top: 24px; display: none; animation: fadeUp .35s ease both; }
+#result.visible { display: block; }
+.divider { height: 1px; background: var(--border); margin: 20px 0; }
+
+/* JOIN DIAGRAM GRID */
+.joins-grid { display: flex; flex-direction: column; gap: 28px; }
+
+.join-block {
+    background: var(--surface-2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+}
+
+.join-block-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--border);
+    flex-wrap: wrap;
+}
+
+.jb-num {
+    font-family: var(--font-mono);
+    font-size: .66rem;
+    color: var(--muted);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 2px 8px;
+    flex-shrink: 0;
+}
+
+.jb-type-badge {
+    font-family: var(--font-mono);
+    font-size: .7rem;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    border-radius: 4px;
+    padding: 3px 10px;
+    flex-shrink: 0;
+}
+
+.jt-inner { background: rgba(56,189,248,.1);  color: var(--blue);  border: 1px solid rgba(56,189,248,.25); }
+.jt-left  { background: rgba(34,197,94,.1);   color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+.jt-right { background: rgba(251,191,36,.1);  color: var(--yellow);border: 1px solid rgba(251,191,36,.25); }
+.jt-full  { background: rgba(167,139,250,.1); color: #a78bfa;      border: 1px solid rgba(167,139,250,.25); }
+.jt-cross { background: rgba(239,68,68,.1);   color: var(--red);   border: 1px solid rgba(239,68,68,.25); }
+
+.jb-tables {
+    font-family: var(--font-mono);
+    font-size: .8rem;
+    color: #fff;
+    font-weight: 700;
+    flex: 1;
+}
+
+.jb-on {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--muted);
+}
+
+.join-block-body {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 0;
+}
+
+/* SVG Venn diagram */
+.venn-wrap {
+    padding: 20px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-right: 1px solid var(--border);
+    min-width: 220px;
+}
+
+/* join analysis panel */
+.join-analysis {
+    padding: 16px 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.ja-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+}
+
+.ja-label {
+    font-family: var(--font-mono);
+    font-size: .6rem;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+
+.ja-value {
+    font-size: .875rem;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+.ja-value.jv-good   { color: var(--green); font-family: var(--font-mono); font-size: .8rem; }
+.ja-value.jv-warn   { color: var(--yellow); font-family: var(--font-mono); font-size: .8rem; }
+.ja-value.jv-bad    { color: var(--red);   font-family: var(--font-mono); font-size: .8rem; }
+
+/* issue chips */
+.issue-list { display: flex; flex-direction: column; gap: 6px; }
+
+.issue-chip {
+    display: flex;
+    gap: 8px;
+    align-items: flex-start;
+    font-size: .8rem;
+    line-height: 1.5;
+}
+
+.ic-critical { color: var(--red); }
+.ic-warning  { color: var(--yellow); }
+.ic-info     { color: var(--blue); }
+.ic-good     { color: var(--green); }
+
+.ic-icon { font-family: var(--font-mono); font-size: .72rem; flex-shrink: 0; margin-top: 2px; }
+.ic-text { flex: 1; color: var(--text); }
+.ic-text small { color: var(--muted); font-size: .78em; display: block; font-style: italic; }
+
+/* generated SQL */
+.gen-sql {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    color: var(--green);
+    background: var(--green-dim);
+    border: 1px solid rgba(34,197,94,.15);
+    border-radius: var(--radius);
+    padding: 8px 12px;
+    white-space: pre-wrap;
+    line-height: 1.5;
+}
+
+/* summary bar */
+.summary-row {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+}
+
+.sum-pill {
+    font-family: var(--font-mono);
+    font-size: .72rem;
+    border-radius: 100px;
+    padding: 5px 14px;
+}
+
+.pill-good   { color: var(--green);  background: var(--green-dim);  border: 1px solid rgba(34,197,94,.2); }
+.pill-warn   { color: var(--yellow); background: var(--yellow-dim); border: 1px solid rgba(251,191,36,.2); }
+.pill-bad    { color: var(--red);    background: var(--red-dim);    border: 1px solid rgba(239,68,68,.2); }
+.pill-info   { color: var(--teal);   background: rgba(45,212,191,.08); border: 1px solid rgba(45,212,191,.2); }
+
+/* info */
+.info-section {
+    padding: 36px 0;
+    border-top: 1px solid var(--border);
+    animation: fadeUp .5s .15s ease both;
+}
+
+.info-section h2 { font-size: 1rem; font-weight: 600; color: #fff; margin-bottom: 14px; }
+.info-section p  { font-size: .875rem; color: var(--muted); font-weight: 300; margin-bottom: 10px; max-width: 580px; }
+.info-section ul { list-style: none; display: flex; flex-direction: column; gap: 7px; margin-top: 4px; }
+.info-section ul li { display: flex; gap: 10px; font-family: var(--font-mono); font-size: .76rem; color: var(--text); }
+.info-section ul li::before { content: "->"; color: var(--accent); flex-shrink: 0; }
+
+footer {
+    position: relative; z-index: 1;
+    border-top: 1px solid var(--border);
+    padding: 24px;
+    max-width: 900px;
+    margin: 0 auto;
+    width: 100%;
+}
+
+footer p { font-family: var(--font-mono); font-size: .68rem; color: var(--muted); }
+
+@keyframes fadeUp { from{opacity:0;transform:translateY(12px)} to{opacity:1;transform:translateY(0)} }
+
+@media (max-width: 540px) {
+    .tool-card { padding: 18px; }
+    .join-block-body { grid-template-columns: 1fr; }
+    .venn-wrap { border-right: none; border-bottom: 1px solid var(--border); }
+}
+</style>
+
 </head>
 <body>
-<div class='container'>
-<h1>MySQL Join Visualizer</h1>
-<textarea id='input'></textarea>
-<input id='value' placeholder='Optional metric'>
-<button onclick='run()'>Run</button>
-<div id='res' class='result'></div>
+
+<nav class="wrapper">
+    <a href="/mysql-tools/">MySQL Tools</a>
+</nav>
+
+<div class="wrapper">
+
+<header>
+    <div class="header-chip">JOIN Visualizer</div>
+    <h1>MySQL <span class="acc">JOIN</span> Visualizer</h1>
+    <p>Paste a MySQL query with JOINs. The visualizer draws each JOIN as a Venn diagram, detects the join type, analyzes cardinality and index coverage, and suggests optimizations.</p>
+</header>
+
+<div class="tool-card">
+
+<div class="samples-row">
+    <span style="font-family:var(--font-mono);font-size:.62rem;color:var(--muted);align-self:center">Samples:</span>
+    <button class="sample-btn" onclick="loadSample('inner')">INNER JOIN</button>
+    <button class="sample-btn" onclick="loadSample('left')">LEFT JOIN</button>
+    <button class="sample-btn" onclick="loadSample('multi')">Multi-table JOIN</button>
+    <button class="sample-btn" onclick="loadSample('bad')">Unindexed JOIN</button>
+    <button class="sample-btn" onclick="loadSample('self')">Self JOIN</button>
 </div>
-<script src='script.js'></script>
+
+<div class="editor-label">MySQL Query with JOINs</div>
+<div class="editor-wrap">
+    <textarea id="queryInput" placeholder="-- Paste a MySQL query with one or more JOINs...
+
+SELECT u.name, o.total
+FROM users u
+INNER JOIN orders o ON o.user_id = u.id
+WHERE u.active = 1;”></textarea>
+</div>
+
+
+<button class="btn-run" onclick="visualize()">Visualize JOINs</button>
+
+<div id="result"></div>
+
+</div>
+
+<div class="info-section">
+    <h2>MySQL JOIN Types Reference</h2>
+    <p>Each JOIN type returns a different subset of the combined rows.</p>
+    <ul>
+        <li>INNER JOIN -- returns only rows where the ON condition matches in BOTH tables</li>
+        <li>LEFT JOIN -- returns all rows from the left table, NULL for non-matching right rows</li>
+        <li>RIGHT JOIN -- returns all rows from the right table, NULL for non-matching left rows</li>
+        <li>CROSS JOIN -- Cartesian product. Every row from left joined with every row from right. O(n*m)</li>
+        <li>The driving table (left) should be smaller -- MySQL reads it first, then looks up in right</li>
+        <li>The join key on the right/inner table always needs an index for efficient nested loop join</li>
+        <li>Avoid joining on non-indexed columns -- causes Block Nested Loop with O(n*m) scans</li>
+    </ul>
+</div>
+
+</div>
+
+<footer class="wrapper">
+    <p>MySQL Tools -- JOIN Visualizer</p>
+</footer>
+
+<script>
+var SAMPLES = {
+    inner:
+"SELECT u.id, u.name, u.email,\n       o.id AS order_id, o.total, o.status\nFROM users u\nINNER JOIN orders o ON o.user_id = u.id\nWHERE u.active = 1\n  AND o.status = 'completed'\nORDER BY o.total DESC\nLIMIT 50;",
+
+    left:
+"SELECT u.id, u.name, u.email,\n       COUNT(o.id) AS order_count,\n       COALESCE(SUM(o.total), 0) AS lifetime_value\nFROM users u\nLEFT JOIN orders o ON o.user_id = u.id\nLEFT JOIN reviews r ON r.user_id = u.id\nWHERE u.created_at > '2024-01-01'\nGROUP BY u.id\nHAVING lifetime_value > 0\nORDER BY lifetime_value DESC;",
+
+    multi:
+"SELECT o.id, o.total, u.name, p.name AS product,\n       c.name AS category\nFROM orders o\nINNER JOIN users u ON u.id = o.user_id\nINNER JOIN order_items oi ON oi.order_id = o.id\nINNER JOIN products p ON p.id = oi.product_id\nINNER JOIN categories c ON c.id = p.category_id\nWHERE o.status = 'pending'\n  AND o.created_at > NOW() - INTERVAL 7 DAY;",
+
+    bad:
+"SELECT e.name, e.salary, d.name AS dept\nFROM employees e\nINNER JOIN departments d ON d.name = e.department_name\nWHERE e.salary > 50000;",
+
+    self:
+"SELECT e.name AS employee,\n       m.name AS manager\nFROM employees e\nLEFT JOIN employees m ON m.id = e.manager_id\nORDER BY m.name, e.name;"
+};
+
+function loadSample(key) {
+    document.getElementById("queryInput").value = SAMPLES[key];
+}
+
+function cleanId(s) {
+    return (s || "").replace(/[`'"]/g,"").trim().toLowerCase();
+}
+
+// ── Parse all JOINs from query ────────────────────────────
+function parseJoins(query) {
+    var joins = [];
+
+    // Get FROM table
+    var fromM = query.match(/FROM\s+`?(\w+)`?(?:\s+(?:AS\s+)?`?(\w+)`?)?/i);
+    var fromTable = fromM ? fromM[1] : "t1";
+    var fromAlias = fromM && fromM[2] ? fromM[2] : fromTable;
+
+    // Match all JOINs
+    var joinRe = /((?:INNER|LEFT|RIGHT|FULL\s+OUTER|FULL|CROSS|NATURAL)?\s*(?:OUTER\s+)?JOIN)\s+`?(\w+)`?(?:\s+(?:AS\s+)?`?(\w+)`?)?\s*(?:ON\s+([\s\S]+?))?(?=(?:INNER|LEFT|RIGHT|FULL|CROSS|NATURAL|JOIN|WHERE|GROUP|ORDER|HAVING|LIMIT|;|$))/gi;
+    var m;
+    var joinIdx = 0;
+
+    while ((m = joinRe.exec(query)) !== null) {
+        var joinType = m[1].trim().toUpperCase().replace(/\s+/g," ");
+        var rightTable = m[2];
+        var rightAlias = m[3] || m[2];
+        var onClause   = (m[4] || "").trim();
+
+        // Normalize join type
+        var type = "inner";
+        if (/LEFT/.test(joinType))  { type = "left"; }
+        if (/RIGHT/.test(joinType)) { type = "right"; }
+        if (/FULL/.test(joinType))  { type = "full"; }
+        if (/CROSS/.test(joinType)) { type = "cross"; }
+        if (/NATURAL/.test(joinType)){ type = "natural"; }
+
+        // Parse ON condition columns
+        var leftCol = null, rightCol = null, leftJoinTable = null, rightJoinTable = null;
+        if (onClause) {
+            var onM = onClause.match(/(\w+)\.(\w+)\s*=\s*(\w+)\.(\w+)/i);
+            if (onM) {
+                // Figure out which side is which table
+                var a1 = onM[1].toLowerCase(), c1 = onM[2].toLowerCase();
+                var a2 = onM[3].toLowerCase(), c2 = onM[4].toLowerCase();
+                if (a1 === cleanId(rightAlias) || a1 === cleanId(rightTable)) {
+                    rightJoinTable = rightTable; rightCol = c2;
+                    leftJoinTable  = fromTable;  leftCol  = c1;
+                } else {
+                    leftJoinTable  = a1 === cleanId(fromAlias) ? fromTable : a1;
+                    leftCol        = c1;
+                    rightJoinTable = rightTable;
+                    rightCol       = c2;
+                }
+            }
+        }
+
+        // Detect join on non-id columns (potential index miss)
+        var joinOnPK = rightCol && (rightCol === "id" || rightCol.endsWith("_id"));
+        var joinOnText = rightCol && !joinOnPK && /name|email|code|title|slug|status/.test(rightCol);
+
+        joins.push({
+            idx:   joinIdx++,
+            type:  type,
+            joinKeyword: joinType,
+            leftTable:   fromTable,
+            leftAlias:   fromAlias,
+            rightTable:  rightTable,
+            rightAlias:  rightAlias,
+            onClause:    onClause,
+            leftCol:     leftCol,
+            rightCol:    rightCol,
+            leftJoinTable:  leftJoinTable,
+            rightJoinTable: rightJoinTable,
+            joinOnPK:    joinOnPK,
+            joinOnText:  joinOnText,
+            isSelfJoin:  cleanId(rightTable) === cleanId(fromTable)
+        });
+
+        // Update "driving table" for chained joins
+        fromTable = rightTable;
+        fromAlias = rightAlias;
+    }
+
+    return { mainFrom: fromM ? fromM[1] : "?", joins: joins };
+}
+
+// ── Build Venn SVG ────────────────────────────────────────
+function buildVenn(join) {
+    var type = join.type;
+    var leftLabel  = (join.leftAlias  || join.leftTable  || "A").substring(0,10);
+    var rightLabel = (join.rightAlias || join.rightTable || "B").substring(0,10);
+
+    var W = 200, H = 110;
+    var cx1 = 68, cx2 = 132, cy = 55, r = 42;
+
+    // Colors
+    var leftFill  = "rgba(56,189,248,.18)";
+    var rightFill = "rgba(45,212,191,.18)";
+    var interFill = "rgba(100,200,200,.35)";
+    var dimFill   = "rgba(255,255,255,.04)";
+
+    var leftOpacity  = 1;
+    var rightOpacity = 1;
+    var interOpacity = 1;
+
+    if (type === "inner") {
+        leftFill  = dimFill; rightFill = dimFill;
+        interOpacity = 1; interFill = "rgba(56,189,248,.45)";
+    } else if (type === "left") {
+        rightFill = dimFill;
+        leftFill  = "rgba(34,197,94,.3)";
+        interFill = "rgba(34,197,94,.4)";
+    } else if (type === "right") {
+        leftFill  = dimFill;
+        rightFill = "rgba(251,191,36,.3)";
+        interFill = "rgba(251,191,36,.4)";
+    } else if (type === "full") {
+        leftFill  = "rgba(167,139,250,.25)";
+        rightFill = "rgba(167,139,250,.25)";
+        interFill = "rgba(167,139,250,.4)";
+    } else if (type === "cross") {
+        leftFill  = "rgba(239,68,68,.2)";
+        rightFill = "rgba(239,68,68,.2)";
+        interFill = "rgba(239,68,68,.35)";
+    }
+
+    var svg =
+        '<svg width="' + W + '" height="' + H + '" viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg">' +
+        // left circle
+        '<circle cx="' + cx1 + '" cy="' + cy + '" r="' + r + '" fill="' + leftFill + '" stroke="rgba(56,189,248,.4)" stroke-width="1.5"/>' +
+        // right circle
+        '<circle cx="' + cx2 + '" cy="' + cy + '" r="' + r + '" fill="' + rightFill + '" stroke="rgba(45,212,191,.4)" stroke-width="1.5"/>' +
+        // intersection highlight via clipPath trick
+        '<defs>' +
+          '<clipPath id="cl_' + join.idx + '"><circle cx="' + cx1 + '" cy="' + cy + '" r="' + r + '"/></clipPath>' +
+        '</defs>' +
+        '<circle cx="' + cx2 + '" cy="' + cy + '" r="' + r + '" fill="' + interFill + '" clip-path="url(#cl_' + join.idx + ')"/>' +
+        // labels
+        '<text x="' + (cx1 - 18) + '" y="' + (cy + 4) + '" font-size="9" fill="rgba(255,255,255,.7)" font-family="Space Mono,monospace" text-anchor="middle">' + leftLabel + '</text>' +
+        '<text x="' + (cx2 + 18) + '" y="' + (cy + 4) + '" font-size="9" fill="rgba(255,255,255,.7)" font-family="Space Mono,monospace" text-anchor="middle">' + rightLabel + '</text>' +
+        // type label center
+        '<text x="' + (W/2) + '" y="' + (H - 8) + '" font-size="8" fill="rgba(255,255,255,.4)" font-family="Space Mono,monospace" text-anchor="middle">' + type.toUpperCase() + '</text>' +
+        '</svg>';
+
+    return svg;
+}
+
+// ── Build issues for a join ───────────────────────────────
+function buildJoinIssues(join) {
+    var issues = [];
+
+    if (join.type === "cross") {
+        issues.push({ cls: "ic-critical", icon: "[!]", text: "CROSS JOIN produces Cartesian product.", note: "Every row from " + join.leftTable + " x every row from " + join.rightTable + ". Add an ON condition to limit results, or this will be O(n*m)." });
+    }
+
+    if (!join.onClause && join.type !== "cross") {
+        issues.push({ cls: "ic-critical", icon: "[!]", text: "No ON condition -- implicit Cartesian product.", note: "This JOIN has no ON clause. MySQL will produce n*m rows. Add ON " + join.leftTable + ".id = " + join.rightTable + ".<fk_column>." });
+    }
+
+    if (join.joinOnText) {
+        issues.push({ cls: "ic-critical", icon: "[!]", text: "Joining on text column `" + join.rightCol + "` -- likely no index.", note: "Joining on a non-integer column (name, email, code) usually means no index. This forces a full scan of " + join.rightTable + " for every row. If possible, join on integer IDs instead." });
+    }
+
+    if (join.rightCol && !join.joinOnPK && !join.joinOnText) {
+        issues.push({ cls: "ic-warning", icon: "[~]", text: "Join key `" + join.rightCol + "` -- verify index exists.", note: "The ON condition uses `" + join.rightCol + "` on " + join.rightTable + ". Ensure an index exists: ALTER TABLE `" + join.rightTable + "` ADD INDEX idx_" + join.rightCol + " (`" + join.rightCol + "`);" });
+    }
+
+    if (join.joinOnPK) {
+        issues.push({ cls: "ic-good", icon: "[v]", text: "Join key `" + join.rightCol + "` looks like a foreign key or primary key.", note: "IDs and FK columns are typically indexed. Verify with SHOW INDEX FROM " + join.rightTable + ";" });
+    }
+
+    if (join.isSelfJoin) {
+        issues.push({ cls: "ic-info", icon: "[i]", text: "Self join detected -- " + join.leftTable + " joined to itself.", note: "Self joins are used for hierarchical data (employees/managers). Ensure the join column has an index for efficiency." });
+    }
+
+    if (join.type === "left" && join.rightCol) {
+        issues.push({ cls: "ic-info", icon: "[i]", text: "LEFT JOIN: rows from " + join.leftTable + " with no match in " + join.rightTable + " return NULL.", note: "If you filter on a right-table column in WHERE (e.g. WHERE " + join.rightTable + ".id IS NOT NULL), it converts to an INNER JOIN semantically." });
+    }
+
+    return issues;
+}
+
+// ── Generate index suggestion ─────────────────────────────
+function genIndexSQL(join) {
+    if (!join.rightCol || join.joinOnPK || join.type === "cross" || !join.onClause) { return null; }
+    return "ALTER TABLE `" + (join.rightTable || "table") + "` ADD INDEX `idx_fk_" + join.rightCol + "` (`" + join.rightCol + "`);";
+}
+
+// ── Render one join block ─────────────────────────────────
+function renderJoinBlock(join, idx) {
+    var typeCls = { inner:"jt-inner", left:"jt-left", right:"jt-right", full:"jt-full", cross:"jt-cross", natural:"jt-inner" }[join.type] || "jt-inner";
+    var issues  = buildJoinIssues(join);
+    var idxSQL  = genIndexSQL(join);
+
+    var issuesHTML = issues.length === 0 ? "" :
+        '<div class="issue-list">' +
+        issues.map(function(is) {
+            return '<div class="issue-chip ' + is.cls + '">' +
+                '<span class="ic-icon">' + is.icon + '</span>' +
+                '<span class="ic-text">' + is.text + (is.note ? '<small>' + is.note + '</small>' : '') + '</span>' +
+            '</div>';
+        }).join("") +
+        '</div>';
+
+    var onDisplay = join.onClause
+        ? join.onClause.replace(/</g,"&lt;").replace(/>/g,"&gt;")
+        : "<em style='color:var(--red)'>No ON condition</em>";
+
+    var perfNote = join.type === "inner" ? "Returns only matching rows. Most efficient join type."
+        : join.type === "left"  ? "Returns all left rows + matched right rows. More rows than INNER JOIN."
+        : join.type === "right" ? "Returns all right rows + matched left rows. Consider rewriting as LEFT JOIN."
+        : join.type === "cross" ? "Cartesian product. Extremely expensive without ON condition."
+        : join.type === "full"  ? "Returns all rows from both tables. MySQL has no native FULL OUTER JOIN — emulate with UNION."
+        : "Natural join — uses matching column names. Fragile, avoid in production.";
+
+    return '<div class="join-block">' +
+        '<div class="join-block-header">' +
+            '<span class="jb-num">JOIN ' + (idx+1) + '</span>' +
+            '<span class="jb-type-badge ' + typeCls + '">' + join.joinKeyword + '</span>' +
+            '<span class="jb-tables">' + join.leftTable + ' &rarr; ' + join.rightTable + '</span>' +
+            '<span class="jb-on">ON ' + onDisplay + '</span>' +
+        '</div>' +
+        '<div class="join-block-body">' +
+            '<div class="venn-wrap">' + buildVenn(join) + '</div>' +
+            '<div class="join-analysis">' +
+                '<div class="ja-row"><span class="ja-label">Behavior</span><span class="ja-value">' + perfNote + '</span></div>' +
+                '<div class="ja-row"><span class="ja-label">Join key</span><span class="ja-value ' + (join.joinOnPK ? "jv-good" : join.joinOnText ? "jv-bad" : "jv-warn") + '">' + (join.rightCol ? join.rightTable + "." + join.rightCol : "unknown -- no ON clause") + '</span></div>' +
+                (issuesHTML ? '<div class="ja-row"><span class="ja-label">Issues</span>' + issuesHTML + '</div>' : '') +
+                (idxSQL ? '<div class="ja-row"><span class="ja-label">Suggested index</span><div class="gen-sql">' + idxSQL + '</div></div>' : '') +
+            '</div>' +
+        '</div>' +
+    '</div>';
+}
+
+// ── Main ──────────────────────────────────────────────────
+function visualize() {
+    var query    = document.getElementById("queryInput").value;
+    var resultEl = document.getElementById("result");
+
+    if (!query.trim()) {
+        alert("Please paste a MySQL query with at least one JOIN.");
+        return;
+    }
+
+    var parsed = parseJoins(query);
+    var joins  = parsed.joins;
+
+    if (joins.length === 0) {
+        resultEl.innerHTML =
+            '<div class="divider"></div>' +
+            '<div style="font-family:var(--font-mono);font-size:.82rem;color:var(--yellow);padding:12px 16px;background:var(--yellow-dim);border:1px solid rgba(251,191,36,.2);border-radius:var(--radius)">' +
+            'No JOIN clauses detected in this query. Paste a query containing INNER JOIN, LEFT JOIN, RIGHT JOIN, etc.' +
+            '</div>';
+        resultEl.classList.add("visible");
+        return;
+    }
+
+    var critCount = 0, warnCount = 0, goodCount = 0;
+    joins.forEach(function(j) {
+        var issues = buildJoinIssues(j);
+        issues.forEach(function(i) {
+            if (i.cls === "ic-critical") { critCount++; }
+            else if (i.cls === "ic-warning") { warnCount++; }
+            else if (i.cls === "ic-good") { goodCount++; }
+        });
+    });
+
+    var summaryHTML =
+        '<div class="summary-row">' +
+        '<div class="sum-pill pill-info">' + joins.length + ' JOIN' + (joins.length !== 1 ? 's' : '') + '</div>' +
+        (critCount > 0 ? '<div class="sum-pill pill-bad">'  + critCount + ' critical</div>' : '') +
+        (warnCount > 0 ? '<div class="sum-pill pill-warn">' + warnCount + ' warning</div>' : '') +
+        (goodCount > 0 ? '<div class="sum-pill pill-good">' + goodCount + ' indexed</div>' : '') +
+        '</div>';
+
+    var blocksHTML = '<div class="joins-grid">' +
+        joins.map(function(j, i) { return renderJoinBlock(j, i); }).join("") +
+        '</div>';
+
+    resultEl.innerHTML =
+        '<div class="divider"></div>' +
+        summaryHTML +
+        blocksHTML;
+
+    resultEl.classList.add("visible");
+    resultEl.scrollIntoView({ behavior: "smooth", block: "nearest" });
+}
+</script>
+
 </body>
 </html>
