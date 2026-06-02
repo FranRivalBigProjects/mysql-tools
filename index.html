@@ -1,21 +1,26 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="PkLa_ViOo6FAHpvh8SacceMb95o9tePRdrqLNBz9X1M" />
-<meta name="robots" content="index, follow">
 
-<!-- SEO — title targets top queries from Search Console -->
+<title>MySQL Query Optimizer Tool – AI-Powered Query Rewriting & Index Recommendations</title>
+<meta name="description" content="Free MySQL query optimizer powered by AI. Paste your SQL query and schema to get instant rewrite suggestions, missing index recommendations, and performance analysis. No login, no installation.">
+<link rel="canonical" href="https://franrivalbigprojects.github.io/mysql-tools/optimizer/">
 
-<title>MySQL Optimization Tool – Query Optimizer, Index Analyzer & Tuning Tools Online</title>
-<meta name="description" content="Free MySQL tools online: optimize queries, analyze EXPLAIN plans, detect deadlocks, check indexes, and tune database performance. No installation required. For DBAs and backend developers.">
-<meta name="keywords" content="mysql optimization tool, mysql optimize query online, mysql tuning tool, mysql query optimization tool, mysql query optimizer tool, mysql performance tuning tools, mysql explain query plan tool, mysql index analyzer, mysql deadlock detection, mysql slow query analyzer, mysql join performance, mysql schema design tool, mysql normalization checker, mysql connection pool analyzer, mysql replication lag analyzer, mysql data analysis tools">
-
-<meta property="og:title" content="MySQL Optimization Tool – Query Optimizer, Index Analyzer and Tuning Tools Online">
-<meta property="og:description" content="15 free MySQL tools: optimize queries, analyze EXPLAIN plans, detect deadlocks, tune indexes, and improve database performance online.">
-<meta property="og:type" content="website">
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "MySQL Query Optimizer Tool",
+  "description": "AI-powered MySQL query optimizer. Paste SQL and schema to receive query rewrites, index recommendations, and execution plan analysis.",
+  "url": "https://franrivalbigprojects.github.io/mysql-tools/optimizer/",
+  "applicationCategory": "DeveloperApplication",
+  "operatingSystem": "Web",
+  "offers": { "@type": "Offer", "price": "0", "priceCurrency": "USD" }
+}
+</script>
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -23,665 +28,1080 @@
 
 <style>
 :root {
-    --bg:         #020617;
-    --surface:    #080f1e;
-    --surface-2:  #0d1829;
-    --border:     #162035;
-    --border-hi:  #f59e0b33;
-    --accent:     #f59e0b;
-    --accent-2:   #fbbf24;
-    --accent-dim: rgba(245,158,11,.07);
-    --blue:       #3b82f6;
-    --blue-dim:   rgba(59,130,246,.07);
-    --green:      #22c55e;
-    --green-dim:  rgba(34,197,94,.07);
-    --text:       #e2e8f0;
-    --muted:      #64748b;
-
-    --font-display: "Space Grotesk", sans-serif;
-    --font-mono:    "Space Mono", monospace;
-    --radius:    8px;
-    --radius-lg: 16px;
-    --transition: 220ms cubic-bezier(.4,0,.2,1);
+  --bg:         #020617;
+  --surface:    #080f1e;
+  --surface-2:  #0d1829;
+  --border:     #162035;
+  --border-hi:  rgba(245,158,11,.25);
+  --accent:     #f59e0b;
+  --accent-2:   #fbbf24;
+  --accent-dim: rgba(245,158,11,.07);
+  --blue:       #3b82f6;
+  --blue-dim:   rgba(59,130,246,.07);
+  --green:      #22c55e;
+  --green-dim:  rgba(34,197,94,.07);
+  --red:        #ef4444;
+  --red-dim:    rgba(239,68,68,.07);
+  --text:       #e2e8f0;
+  --muted:      #64748b;
+  --font-d:     'Space Grotesk', sans-serif;
+  --font-m:     'Space Mono', monospace;
 }
 
 *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 html { scroll-behavior: smooth; }
 
 body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font-display);
-    font-size: 16px;
-    line-height: 1.7;
-    min-height: 100vh;
-    overflow-x: hidden;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-d);
+  font-size: 15px;
+  line-height: 1.7;
+  min-height: 100vh;
+  overflow-x: hidden;
 }
 
-/* diagonal stripe background */
+/* ambient background */
 body::before {
-    content: "";
-    position: fixed; inset: 0;
-    background-image: repeating-linear-gradient(
-        -45deg,
-        transparent,
-        transparent 40px,
-        rgba(245,158,11,.015) 40px,
-        rgba(245,158,11,.015) 41px
-    );
-    pointer-events: none; z-index: 0;
+  content: '';
+  position: fixed; inset: 0;
+  background-image: repeating-linear-gradient(-45deg, transparent, transparent 40px,
+    rgba(245,158,11,.012) 40px, rgba(245,158,11,.012) 41px);
+  pointer-events: none; z-index: 0;
 }
-
 body::after {
-    content: "";
-    position: fixed;
-    top: 0; left: 0; right: 0;
-    height: 400px;
-    background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245,158,11,.08) 0%, transparent 70%);
-    pointer-events: none; z-index: 0;
+  content: '';
+  position: fixed; top: 0; left: 0; right: 0; height: 420px;
+  background: radial-gradient(ellipse 80% 50% at 50% -10%, rgba(245,158,11,.07) 0%, transparent 70%);
+  pointer-events: none; z-index: 0;
 }
 
-.wrapper {
-    position: relative; z-index: 1;
-    max-width: 1080px;
-    margin: 0 auto;
-    padding: 0 28px;
+.wrapper { position: relative; z-index: 1; max-width: 1000px; margin: 0 auto; padding: 0 26px; }
+
+/* BREADCRUMB */
+.back-bar {
+  padding: 18px 0;
+  border-bottom: 1px solid var(--border);
 }
+.back-link {
+  font-family: var(--font-m);
+  font-size: 11px;
+  letter-spacing: .08em;
+  color: var(--muted);
+  text-decoration: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: color .2s;
+}
+.back-link:hover { color: var(--accent); }
 
 /* HEADER */
 header {
-    padding: 76px 0 64px;
-    border-bottom: 1px solid var(--border);
-    animation: fadeUp .6s ease both;
+  padding: 52px 0 40px;
+  border-bottom: 1px solid var(--border);
+  animation: fadeUp .5s ease both;
 }
 
-.header-top {
-    display: flex;
-    align-items: flex-start;
-    justify-content: space-between;
-    gap: 40px;
-    flex-wrap: wrap;
+.eyebrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .16em;
+  text-transform: uppercase;
+  color: var(--accent);
+  background: var(--accent-dim);
+  border: 1px solid rgba(245,158,11,.2);
+  border-radius: 4px;
+  padding: 4px 12px;
+  margin-bottom: 20px;
 }
-
-.header-left { max-width: 700px; }
-
-.header-eyebrow {
-    display: inline-flex;
-    align-items: center;
-    gap: 8px;
-    font-family: var(--font-mono);
-    font-size: 10px;
-    letter-spacing: .16em;
-    text-transform: uppercase;
-    color: var(--accent);
-    background: var(--accent-dim);
-    border: 1px solid rgba(245,158,11,.2);
-    border-radius: 4px;
-    padding: 4px 12px;
-    margin-bottom: 22px;
-}
-
 .eyebrow-dot {
-    width: 5px; height: 5px;
-    border-radius: 50%;
-    background: var(--accent);
-    animation: blink 2s ease-in-out infinite;
+  width: 5px; height: 5px; border-radius: 50%;
+  background: var(--accent);
+  animation: blink 2s ease-in-out infinite;
 }
-
 @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.2} }
 
-header h1 {
-    font-family: var(--font-display);
-    font-size: clamp(1.8rem, 4vw, 3rem);
-    font-weight: 700;
-    line-height: 1.1;
-    letter-spacing: -.03em;
-    color: #fff;
-    margin-bottom: 18px;
+h1 {
+  font-family: var(--font-d);
+  font-size: clamp(1.7rem, 3.5vw, 2.8rem);
+  font-weight: 700;
+  line-height: 1.1;
+  letter-spacing: -.03em;
+  color: #fff;
+  margin-bottom: 14px;
 }
-
-header h1 .hl { color: var(--accent); }
-
-header p {
-    font-size: 1rem;
-    color: var(--muted);
-    font-weight: 300;
-    max-width: 560px;
+h1 .hl { color: var(--accent); }
+.header-sub {
+  font-size: .95rem;
+  color: var(--muted);
+  font-weight: 300;
+  max-width: 560px;
+  margin-bottom: 22px;
 }
-
-/* stat pills */
-.stat-pills {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    align-items: flex-end;
-    flex-shrink: 0;
+.header-badges { display: flex; gap: 8px; flex-wrap: wrap; }
+.badge {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .06em;
+  padding: 4px 12px;
+  border-radius: 4px;
+  border: 1px solid var(--border);
+  color: var(--muted);
 }
+.badge.acc { border-color: rgba(245,158,11,.3); color: var(--accent); background: var(--accent-dim); }
+.badge.grn { border-color: rgba(34,197,94,.3); color: var(--green); background: var(--green-dim); }
 
-.stat-pill {
-    font-family: var(--font-mono);
-    font-size: .72rem;
-    letter-spacing: .06em;
-    color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 5px 14px;
-    white-space: nowrap;
+/* NAV */
+.nav-strip {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  position: sticky; top: 0; z-index: 100;
 }
-
-.stat-pill span { color: var(--accent); }
-
-/* SECTIONS */
-section {
-    padding: 52px 0;
-    border-bottom: 1px solid var(--border);
-    animation: fadeUp .55s ease both;
+.nav-inner { display: flex; overflow-x: auto; gap: 0; }
+.nav-inner a {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  text-decoration: none;
+  padding: 11px 16px;
+  white-space: nowrap;
+  border-bottom: 2px solid transparent;
+  transition: color .15s, border-color .15s;
 }
+.nav-inner a:hover { color: var(--accent); border-bottom-color: var(--accent); }
 
-section:nth-of-type(1) { animation-delay: .07s; }
-section:nth-of-type(2) { animation-delay: .13s; }
-section:nth-of-type(3) { animation-delay: .19s; }
-section:nth-of-type(4) { animation-delay: .25s; }
-section:nth-of-type(5) { animation-delay: .31s; }
-section:nth-of-type(6) { animation-delay: .37s; }
-section:nth-of-type(7) { animation-delay: .43s; }
-section:last-of-type   { border-bottom: none; }
+/* MAIN TOOL SECTION */
+.tool-section { padding: 48px 0; border-bottom: 1px solid var(--border); animation: fadeUp .5s .1s ease both; }
 
 .section-head {
-    display: flex;
-    align-items: center;
-    gap: 14px;
-    margin-bottom: 22px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  margin-bottom: 24px;
 }
-
 .section-head h2 {
-    font-family: var(--font-mono);
-    font-size: .78rem;
-    font-weight: 400;
-    letter-spacing: .12em;
-    text-transform: uppercase;
-    color: var(--accent);
-    white-space: nowrap;
+  font-family: var(--font-m);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: .14em;
+  text-transform: uppercase;
+  color: var(--accent);
+  white-space: nowrap;
 }
-
 .section-rule { flex: 1; height: 1px; background: var(--border); }
 
-/* TOOL CARDS */
-.tools-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-    gap: 12px;
+/* QUERY INPUT GRID */
+.input-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-bottom: 12px;
 }
 
-.tool {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius-lg);
-    padding: 22px 24px;
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    text-decoration: none;
-    color: inherit;
-    position: relative;
-    overflow: hidden;
-    transition: border-color var(--transition), transform var(--transition), box-shadow var(--transition);
+.field-label {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 6px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.field-hint-text {
+  font-size: 10px;
+  color: var(--muted);
+  opacity: .6;
+  font-family: var(--font-m);
+  text-transform: none;
+  letter-spacing: 0;
 }
 
-.tool::after {
-    content: "";
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    background: linear-gradient(90deg, var(--accent), var(--accent-2));
-    opacity: 0;
-    transition: opacity var(--transition);
+textarea {
+  width: 100%;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-m);
+  font-size: 12px;
+  padding: 14px;
+  border-radius: 8px;
+  outline: none;
+  resize: vertical;
+  transition: border-color .2s, background .2s;
+  line-height: 1.65;
+}
+textarea:focus { border-color: var(--border-hi); background: var(--surface-2); }
+textarea::placeholder { color: var(--muted); opacity: .5; font-size: 11px; }
+#sql-input  { height: 200px; }
+#schema-input { height: 200px; }
+
+/* OPTION ROW */
+.option-row {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+.select-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.select-wrap select {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  color: var(--text);
+  font-family: var(--font-m);
+  font-size: 11px;
+  padding: 7px 12px;
+  border-radius: 6px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color .2s;
+}
+.select-wrap select:focus { border-color: var(--border-hi); }
+
+/* BUTTONS */
+.btn-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.btn {
+  font-family: var(--font-m);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 11px 22px;
+  border-radius: 6px;
+  cursor: pointer;
+  border: none;
+  transition: all .18s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+.btn-primary {
+  background: var(--accent);
+  color: #020617;
+}
+.btn-primary:hover { background: var(--accent-2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(245,158,11,.3); }
+.btn-primary:disabled { background: rgba(245,158,11,.25); color: rgba(2,6,23,.5); cursor: not-allowed; transform: none; box-shadow: none; }
+.btn-ghost {
+  background: transparent;
+  border: 1px solid var(--border);
+  color: var(--muted);
+}
+.btn-ghost:hover { border-color: var(--border-hi); color: var(--accent); }
+
+.spinner {
+  width: 14px; height: 14px;
+  border: 2px solid rgba(2,6,23,.3);
+  border-top-color: #020617;
+  border-radius: 50%;
+  animation: spin .7s linear infinite;
+  display: none;
+}
+.btn-primary:disabled .spinner { display: block; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+.status-text {
+  font-family: var(--font-m);
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: .04em;
 }
 
-.tool:hover {
-    border-color: rgba(245,158,11,.35);
-    transform: translateY(-2px);
-    box-shadow: 0 12px 36px rgba(0,0,0,.5);
+/* RESULT AREA */
+.result-wrap {
+  margin-top: 20px;
+  display: none;
+  animation: fadeUp .35s ease both;
 }
+.result-wrap.visible { display: block; }
 
-.tool:hover::after { opacity: 1; }
-
-.tool-path {
-    font-family: var(--font-mono);
-    font-size: .6rem;
-    letter-spacing: .06em;
-    color: var(--muted);
-    opacity: .7;
+/* TAB SYSTEM */
+.result-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--border);
+  overflow-x: auto;
 }
-
-.tool-name {
-    font-size: .95rem;
-    font-weight: 600;
-    color: #fff;
-    line-height: 1.25;
+.rtab {
+  font-family: var(--font-m);
+  font-size: 10px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  color: var(--muted);
+  cursor: pointer;
+  background: none;
+  border: none;
+  border-bottom: 2px solid transparent;
+  transition: all .15s;
+  white-space: nowrap;
 }
+.rtab:hover { color: var(--accent); }
+.rtab.active { color: var(--accent); border-bottom-color: var(--accent); }
+.rpanel { display: none; padding-top: 20px; }
+.rpanel.active { display: block; }
 
-.tool-desc {
-    font-size: .845rem;
-    color: var(--muted);
-    font-weight: 300;
-    flex: 1;
-    line-height: 1.55;
+/* AI RESPONSE RENDERING */
+.ai-response {
+  font-size: 14px;
+  color: var(--muted);
+  line-height: 1.8;
 }
-
-.tool-cta {
-    font-family: var(--font-mono);
-    font-size: .68rem;
-    letter-spacing: .05em;
-    text-transform: uppercase;
-    color: var(--accent);
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    margin-top: 4px;
-    transition: gap var(--transition);
+.ai-response h3 {
+  font-family: var(--font-m);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 22px 0 10px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
 }
-
-.tool-cta::after { content: ">"; }
-.tool:hover .tool-cta { gap: 9px; }
-
-/* USE CASES */
-.use-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 10px;
+.ai-response h3:first-child { margin-top: 0; }
+.ai-response p { margin-bottom: 12px; }
+.ai-response p:last-child { margin-bottom: 0; }
+.ai-response strong { color: var(--text); font-weight: 600; }
+.ai-response ul { list-style: none; padding: 0; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.ai-response ul li { display: flex; gap: 8px; font-size: 13px; }
+.ai-response ul li::before { content: '→'; color: var(--accent); font-family: var(--font-m); font-size: 11px; flex-shrink: 0; margin-top: 3px; }
+.ai-response ol { padding-left: 20px; display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+.ai-response ol li { font-size: 13px; color: var(--muted); }
+.ai-response code {
+  font-family: var(--font-m);
+  font-size: 12px;
+  color: var(--accent-2);
+  background: rgba(245,158,11,.08);
+  padding: 1px 6px;
+  border-radius: 3px;
 }
-
-.use-item {
-    display: flex;
-    gap: 10px;
-    align-items: flex-start;
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 13px 15px;
-    font-size: .875rem;
-    color: var(--text);
-    transition: border-color var(--transition);
+.ai-response pre {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 16px;
+  overflow-x: auto;
+  margin-bottom: 14px;
+  position: relative;
 }
+.ai-response pre code {
+  background: none;
+  color: var(--text);
+  font-size: 12px;
+  padding: 0;
+}
+.copy-code-btn {
+  position: absolute;
+  top: 8px; right: 8px;
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+  padding: 3px 8px;
+  border: 1px solid var(--border);
+  background: var(--surface-2);
+  color: var(--muted);
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all .15s;
+}
+.copy-code-btn:hover { border-color: var(--border-hi); color: var(--accent); }
 
-.use-item:hover { border-color: rgba(245,158,11,.25); }
-.use-arrow { color: var(--accent); font-family: var(--font-mono); font-size: .75rem; flex-shrink: 0; margin-top: 3px; }
+/* SEVERITY BADGE IN AI RESPONSE */
+.sev { display: inline-block; font-family: var(--font-m); font-size: 10px; padding: 2px 8px; border-radius: 3px; letter-spacing: .04em; text-transform: uppercase; }
+.sev-critical { background: var(--red-dim); color: var(--red); border: 1px solid rgba(239,68,68,.25); }
+.sev-high     { background: rgba(245,158,11,.1); color: var(--accent); border: 1px solid rgba(245,158,11,.25); }
+.sev-medium   { background: rgba(59,130,246,.1); color: var(--blue); border: 1px solid rgba(59,130,246,.25); }
+.sev-low      { background: var(--green-dim); color: var(--green); border: 1px solid rgba(34,197,94,.25); }
+
+/* STREAMING INDICATOR */
+.stream-cursor {
+  display: inline-block;
+  width: 2px; height: 14px;
+  background: var(--accent);
+  margin-left: 2px;
+  animation: blink-cur .8s ease-in-out infinite;
+  vertical-align: middle;
+}
+@keyframes blink-cur { 0%,100%{opacity:1} 50%{opacity:0} }
+
+/* SCORE CARD */
+.score-row { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+.score-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px 18px;
+  min-width: 130px;
+  flex: 1;
+}
+.score-val {
+  font-family: var(--font-m);
+  font-size: 26px;
+  font-weight: 700;
+  display: block;
+  line-height: 1;
+  margin-bottom: 4px;
+}
+.score-label { font-family: var(--font-m); font-size: 10px; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); }
+
+/* EXAMPLES PANEL */
+.examples-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 10px;
+  margin-top: 8px;
+}
+.example-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color .15s, transform .15s;
+}
+.example-card:hover { border-color: var(--border-hi); transform: translateY(-1px); }
+.ex-tag {
+  font-family: var(--font-m);
+  font-size: 9px;
+  letter-spacing: .08em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin-bottom: 6px;
+  display: block;
+}
+.ex-title { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 4px; }
+.ex-desc { font-size: 12px; color: var(--muted); line-height: 1.5; }
+
+/* INFO SECTIONS */
+.info-section { padding: 48px 0; border-bottom: 1px solid var(--border); animation: fadeUp .5s .2s ease both; }
+.two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 8px; }
+.info-block h3 {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid var(--border);
+}
+.info-block p { font-size: 13px; color: var(--muted); line-height: 1.75; margin-bottom: 10px; }
+.info-block code { font-family: var(--font-m); font-size: 11px; color: var(--accent-2); background: var(--accent-dim); padding: 1px 5px; border-radius: 3px; }
+.tip-list { list-style: none; display: flex; flex-direction: column; gap: 6px; }
+.tip-list li { font-size: 13px; color: var(--muted); display: flex; gap: 8px; }
+.tip-list li::before { content: '→'; color: var(--accent); font-family: var(--font-m); font-size: 11px; flex-shrink: 0; margin-top: 2px; }
+.tip-list strong { color: var(--text); }
+
+/* REF TABLE */
+.table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 8px; }
+table { width: 100%; border-collapse: collapse; background: var(--surface); font-size: 13px; }
+thead { background: var(--surface-2); }
+thead th { font-family: var(--font-m); font-size: 10px; text-transform: uppercase; letter-spacing: .08em; padding: 10px 14px; text-align: left; color: var(--muted); white-space: nowrap; }
+tbody tr { border-bottom: 1px solid var(--border); transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: var(--surface-2); }
+tbody td { padding: 9px 14px; color: var(--muted); }
+.td-key { font-family: var(--font-m); font-size: 12px; font-weight: 700; color: var(--accent-2); }
+.td-code { font-family: var(--font-m); font-size: 11px; color: var(--text); }
 
 /* FAQ */
-.faq-list { display: flex; flex-direction: column; gap: 12px; }
-
+.faq-section { padding: 48px 0; animation: fadeUp .5s .3s ease both; }
 .faq-item {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: var(--radius);
-    padding: 18px 22px;
-    transition: border-color var(--transition);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 18px 22px;
+  margin-bottom: 10px;
+  transition: border-color .15s;
 }
-
 .faq-item:hover { border-color: rgba(245,158,11,.2); }
-
-.faq-q {
-    font-size: .95rem;
-    font-weight: 600;
-    color: #fff;
-    margin-bottom: 6px;
-}
-
-.faq-a {
-    font-size: .865rem;
-    color: var(--muted);
-    font-weight: 300;
-    line-height: 1.65;
-}
-
-.faq-a code {
-    font-family: var(--font-mono);
-    font-size: .78em;
-    color: var(--accent);
-    background: var(--accent-dim);
-    border-radius: 3px;
-    padding: 1px 6px;
-}
-
-/* TAGS */
-.tag-cloud { display: flex; flex-wrap: wrap; gap: 8px; }
-
-.tag {
-    font-family: var(--font-mono);
-    font-size: .7rem;
-    color: var(--muted);
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 100px;
-    padding: 4px 13px;
-    cursor: default;
-    transition: color var(--transition), border-color var(--transition), background var(--transition);
-}
-
-.tag:hover { color: var(--accent); border-color: rgba(245,158,11,.3); background: var(--accent-dim); }
+.faq-q { font-size: 14px; font-weight: 600; color: #fff; margin-bottom: 6px; }
+.faq-a { font-size: 13px; color: var(--muted); line-height: 1.65; }
+.faq-a code { font-family: var(--font-m); font-size: .78em; color: var(--accent); background: var(--accent-dim); border-radius: 3px; padding: 1px 6px; }
 
 /* FOOTER */
 footer {
-    padding: 44px 0;
-    border-top: 1px solid var(--border);
-    position: relative; z-index: 1;
+  padding: 40px 0;
+  border-top: 1px solid var(--border);
+  animation: fadeUp .5s .35s ease both;
 }
+.footer-inner { display: flex; align-items: center; justify-content: space-between; gap: 16px; flex-wrap: wrap; }
+.footer-brand { font-family: var(--font-m); font-size: 12px; font-weight: 700; color: var(--accent); }
+.footer-nav { display: flex; gap: 14px; flex-wrap: wrap; }
+.footer-nav a { font-family: var(--font-m); font-size: 10px; letter-spacing: .06em; color: var(--muted); text-decoration: none; text-transform: uppercase; }
+.footer-nav a:hover { color: var(--accent); }
 
-.footer-inner {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 16px;
-    flex-wrap: wrap;
-}
+@keyframes fadeUp { from{opacity:0;transform:translateY(14px)} to{opacity:1;transform:translateY(0)} }
 
-.footer-brand {
-    font-family: var(--font-mono);
-    font-size: .82rem;
-    font-weight: 700;
-    color: var(--accent);
-    letter-spacing: .04em;
-}
-
-footer p { font-family: var(--font-mono); font-size: .7rem; color: var(--muted); }
-
-@keyframes fadeUp { from{opacity:0;transform:translateY(16px)} to{opacity:1;transform:translateY(0)} }
-
-@media (max-width: 640px) {
-    header { padding: 52px 0 44px; }
-    .header-top { flex-direction: column; }
-    .stat-pills { flex-direction: row; align-items: flex-start; flex-wrap: wrap; }
-    .tools-grid { grid-template-columns: 1fr; }
-    .use-grid   { grid-template-columns: 1fr; }
+@media (max-width: 680px) {
+  .input-grid { grid-template-columns: 1fr; }
+  .two-col { grid-template-columns: 1fr; }
+  .score-row { flex-direction: column; }
 }
 </style>
-
 </head>
 
 <body>
 <div class="wrapper">
 
-<!-- HEADER -->
-<header>
-    <div class="header-top">
-        <div class="header-left">
-            <div class="header-eyebrow"><span class="eyebrow-dot"></span>MySQL Toolkit</div>
-            <h1>
-                MySQL <span class="hl">Optimization</span><br>
-                &amp; Tuning Tools Online
-            </h1>
-            <p>
-                15 free tools to optimize MySQL queries, analyze EXPLAIN plans,
-                detect deadlocks, check indexes, and tune database performance —
-                directly in the browser. No installation required.
-            </p>
-        </div>
-        <div class="stat-pills">
-            <div class="stat-pill"><span>15</span> free tools</div>
-            <div class="stat-pill"><span>Online</span> no install</div>
-            <div class="stat-pill">For <span>DBAs</span> &amp; devs</div>
-        </div>
-    </div>
-</header>
+  <!-- BACK BAR -->
+  <nav class="back-bar">
+    <a href="../" class="back-link">← MySQL Tools</a>
+  </nav>
 
-<!-- QUERY ANALYSIS -->
-<section>
+  <!-- HEADER -->
+  <header>
+    <div class="eyebrow"><span class="eyebrow-dot"></span>MySQL Optimizer</div>
+    <h1>MySQL Query <span class="hl">Optimizer</span> Tool</h1>
+    <p class="header-sub">AI-powered query rewriting, missing index detection, and execution cost analysis. Paste your SQL — get instant optimization recommendations. Free, no login.</p>
+    <div class="header-badges">
+      <span class="badge acc">AI-Powered</span>
+      <span class="badge grn">No login required</span>
+      <span class="badge">MySQL 5.7 · 8.0 · 8.4</span>
+      <span class="badge">EXPLAIN analysis</span>
+    </div>
+  </header>
+
+  <!-- NAV STRIP -->
+  <nav class="nav-strip">
+    <div class="nav-inner">
+      <a href="#optimizer">Optimizer</a>
+      <a href="#examples">Examples</a>
+      <a href="#guide">Guide</a>
+      <a href="#reference">EXPLAIN Reference</a>
+      <a href="#faq">FAQ</a>
+    </div>
+  </nav>
+
+  <!-- MAIN TOOL -->
+  <section class="tool-section" id="optimizer">
     <div class="section-head">
-        <h2>Query Analysis &amp; Optimization</h2>
-        <span class="section-rule"></span>
+      <h2>AI MySQL Query Optimizer</h2>
+      <span class="section-rule"></span>
     </div>
-    <div class="tools-grid">
 
-        <a class="tool" href="slow-query/">
-            <span class="tool-path">mysql-tools/slow-query/</span>
-            <span class="tool-name">Slow Query Analyzer</span>
-            <span class="tool-desc">Identify slow MySQL queries by analyzing query patterns, execution time estimates, and missing index opportunities.</span>
-            <span class="tool-cta">Open Analyzer</span>
-        </a>
-
-        <a class="tool" href="explain/">
-            <span class="tool-path">mysql-tools/explain/</span>
-            <span class="tool-name">EXPLAIN Plan Analyzer</span>
-            <span class="tool-desc">Paste your MySQL EXPLAIN output and get a plain-English breakdown of the execution plan with optimization recommendations.</span>
-            <span class="tool-cta">Open EXPLAIN Tool</span>
-        </a>
-
-        <a class="tool" href="optimizer/">
-            <span class="tool-path">mysql-tools/optimizer/</span>
-            <span class="tool-name">MySQL Query Optimizer</span>
-            <span class="tool-desc">Get specific rewrite suggestions for complex SELECT, JOIN, and subquery patterns to reduce cost and improve execution time.</span>
-            <span class="tool-cta">Open Optimizer</span>
-        </a>
-
-        <a class="tool" href="join/">
-            <span class="tool-path">mysql-tools/join/</span>
-            <span class="tool-name">JOIN Performance Analyzer</span>
-            <span class="tool-desc">Analyze JOIN types, cardinality, and index usage. Detect missing indexes on join keys and suggest query rewrites.</span>
-            <span class="tool-cta">Open JOIN Analyzer</span>
-        </a>
-
-        <a class="tool" href="formatter/">
-            <span class="tool-path">mysql-tools/formatter/</span>
-            <span class="tool-name">MySQL Query Formatter</span>
-            <span class="tool-desc">Format and beautify MySQL queries for readability, debugging, and documentation. Supports complex multi-line queries.</span>
-            <span class="tool-cta">Open Formatter</span>
-        </a>
-
-    </div>
-</section>
-
-<!-- INDEXING -->
-<section>
-    <div class="section-head">
-        <h2>Indexing &amp; Performance</h2>
-        <span class="section-rule"></span>
-    </div>
-    <div class="tools-grid">
-
-        <a class="tool" href="index/">
-            <span class="tool-path">mysql-tools/index/</span>
-            <span class="tool-name">Index Performance Analyzer</span>
-            <span class="tool-desc">Evaluate index coverage, detect unused or redundant indexes, and get suggestions for composite index creation based on your queries.</span>
-            <span class="tool-cta">Open Index Analyzer</span>
-        </a>
-
-        <a class="tool" href="benchmark/">
-            <span class="tool-path">mysql-tools/benchmark/</span>
-            <span class="tool-name">Query Benchmark Tool</span>
-            <span class="tool-desc">Estimate and compare query performance at different data scales. Simulate load and identify performance bottlenecks before production.</span>
-            <span class="tool-cta">Open Benchmark Tool</span>
-        </a>
-
-        <a class="tool" href="size/">
-            <span class="tool-path">mysql-tools/size/</span>
-            <span class="tool-name">Database Size Calculator</span>
-            <span class="tool-desc">Estimate MySQL table and database storage usage based on schema, row count, and data types. Plan for storage growth.</span>
-            <span class="tool-cta">Open Size Calculator</span>
-        </a>
-
-    </div>
-</section>
-
-<!-- LOCKS -->
-<section>
-    <div class="section-head">
-        <h2>Locks, Transactions &amp; Deadlocks</h2>
-        <span class="section-rule"></span>
-    </div>
-    <div class="tools-grid">
-
-        <a class="tool" href="deadlock/">
-            <span class="tool-path">mysql-tools/deadlock/</span>
-            <span class="tool-name">Deadlock Detector</span>
-            <span class="tool-desc">Analyze transaction patterns to identify deadlock scenarios. Understand lock dependency graphs and get resolution strategies.</span>
-            <span class="tool-cta">Open Deadlock Detector</span>
-        </a>
-
-        <a class="tool" href="lock/">
-            <span class="tool-path">mysql-tools/lock/</span>
-            <span class="tool-name">Lock Analyzer</span>
-            <span class="tool-desc">Diagnose row-level, table-level, and metadata lock contention. Identify long-running transactions that block other queries.</span>
-            <span class="tool-cta">Open Lock Analyzer</span>
-        </a>
-
-        <a class="tool" href="transaction/">
-            <span class="tool-path">mysql-tools/transaction/</span>
-            <span class="tool-name">Transaction Debug Tool</span>
-            <span class="tool-desc">Debug transaction flows, isolation level issues, and consistency problems. Analyze BEGIN/COMMIT/ROLLBACK patterns.</span>
-            <span class="tool-cta">Open Transaction Tool</span>
-        </a>
-
-    </div>
-</section>
-
-<!-- SCHEMA -->
-<section>
-    <div class="section-head">
-        <h2>Schema &amp; Design</h2>
-        <span class="section-rule"></span>
-    </div>
-    <div class="tools-grid">
-
-        <a class="tool" href="schema/">
-            <span class="tool-path">mysql-tools/schema/</span>
-            <span class="tool-name">Schema Design Tool</span>
-            <span class="tool-desc">Design efficient MySQL database schemas. Get recommendations on data types, nullability, constraints, and table relationships.</span>
-            <span class="tool-cta">Open Schema Tool</span>
-        </a>
-
-        <a class="tool" href="normalization/">
-            <span class="tool-path">mysql-tools/normalization/</span>
-            <span class="tool-name">Normalization Checker</span>
-            <span class="tool-desc">Check your schema against 1NF, 2NF, and 3NF normalization rules. Detect redundancy, partial dependencies, and transitive dependencies.</span>
-            <span class="tool-cta">Open Normalization Checker</span>
-        </a>
-
-    </div>
-</section>
-
-<!-- REPLICATION -->
-<section>
-    <div class="section-head">
-        <h2>Replication &amp; Scaling</h2>
-        <span class="section-rule"></span>
-    </div>
-    <div class="tools-grid">
-
-        <a class="tool" href="replication/">
-            <span class="tool-path">mysql-tools/replication/</span>
-            <span class="tool-name">Replication Lag Analyzer</span>
-            <span class="tool-desc">Monitor MySQL replication health, estimate lag from binary log patterns, and diagnose replica delay root causes.</span>
-            <span class="tool-cta">Open Replication Tool</span>
-        </a>
-
-        <a class="tool" href="pool/">
-            <span class="tool-path">mysql-tools/pool/</span>
-            <span class="tool-name">Connection Pool Analyzer</span>
-            <span class="tool-desc">Optimize MySQL connection pooling parameters. Calculate ideal pool size based on workload, thread count, and query duration.</span>
-            <span class="tool-cta">Open Pool Analyzer</span>
-        </a>
-
-    </div>
-</section>
-
-<!-- USE CASES -->
-<section>
-    <div class="section-head">
-        <h2>Use Cases</h2>
-        <span class="section-rule"></span>
-    </div>
-    <div class="use-grid">
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Optimizing slow MySQL queries in production without downtime</div>
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Reading and understanding MySQL EXPLAIN output for the first time</div>
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Detecting missing indexes causing full table scans</div>
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Diagnosing deadlocks in high-concurrency applications</div>
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Estimating database storage growth before scaling</div>
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Tuning connection pool settings for Node.js or PHP apps</div>
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Normalizing a legacy schema to reduce data redundancy</div>
-        <div class="use-item"><span class="use-arrow">-&gt;</span>Analyzing replication lag in primary-replica MySQL setups</div>
-    </div>
-</section>
-
-<!-- FAQ — targets top Search Console queries directly -->
-<section>
-    <div class="section-head">
-        <h2>Frequently Asked Questions</h2>
-        <span class="section-rule"></span>
-    </div>
-    <div class="faq-list">
-
-        <div class="faq-item">
-            <p class="faq-q">How do I optimize a slow MySQL query online?</p>
-            <p class="faq-a">Start by running <code>EXPLAIN SELECT ...</code> on the slow query. Look for rows with <code>type = ALL</code> (full table scan) or <code>Extra = Using filesort</code> — both are signs of missing indexes. Our Slow Query Analyzer and EXPLAIN Plan Analyzer guide you through this process step by step without needing a local MySQL instance.</p>
+    <div class="input-grid">
+      <div>
+        <div class="field-label">
+          SQL Query <span class="field-hint-text">SELECT, UPDATE, DELETE, INSERT...SELECT</span>
         </div>
-
-        <div class="faq-item">
-            <p class="faq-q">What is the best MySQL query optimization tool?</p>
-            <p class="faq-a">The most effective approach combines three tools: EXPLAIN for execution plan analysis, an index analyzer to detect missing or redundant indexes, and a query rewriter for structural improvements. Our MySQL Query Optimizer addresses all three — paste your query and get specific rewrite suggestions and index recommendations.</p>
+        <textarea id="sql-input" placeholder="SELECT u.id, u.name, o.total
+FROM users u
+JOIN orders o ON u.id = o.user_id
+WHERE o.status = 'pending'
+  AND o.created_at > '2026-01-01'
+ORDER BY o.created_at DESC
+LIMIT 100;"></textarea>
+      </div>
+      <div>
+        <div class="field-label">
+          Schema / CREATE TABLE <span class="field-hint-text">Optional but strongly recommended</span>
         </div>
+        <textarea id="schema-input" placeholder="CREATE TABLE users (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  name VARCHAR(100) NOT NULL,
+  email VARCHAR(150) UNIQUE,
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+);
 
-        <div class="faq-item">
-            <p class="faq-q">How do I use MySQL EXPLAIN to optimize queries?</p>
-            <p class="faq-a">Prepend <code>EXPLAIN</code> to any SELECT query. The output shows how MySQL plans to execute it — which indexes it uses, how many rows it scans, and the join order. Key columns to watch: <code>type</code> (aim for <code>ref</code> or <code>eq_ref</code>, avoid <code>ALL</code>), <code>key</code> (which index is used), and <code>rows</code> (estimated rows scanned). Our EXPLAIN Plan Analyzer translates this output into plain English.</p>
-        </div>
-
-        <div class="faq-item">
-            <p class="faq-q">How do I tune MySQL performance for high traffic?</p>
-            <p class="faq-a">MySQL tuning for high traffic covers four areas: query optimization (indexes, rewrites), connection management (pool sizing, thread limits), InnoDB configuration (<code>innodb_buffer_pool_size</code> should be 60-80% of available RAM), and read scaling (read replicas for SELECT-heavy workloads). Our tools cover query and connection pool tuning — start with the Slow Query Analyzer to find the highest-impact fixes first.</p>
-        </div>
-
-        <div class="faq-item">
-            <p class="faq-q">How do I detect and fix MySQL deadlocks?</p>
-            <p class="faq-a">Run <code>SHOW ENGINE INNODB STATUS</code> and look for the <code>LATEST DETECTED DEADLOCK</code> section. It shows the two transactions and the rows they were waiting on. The fix usually involves reordering operations so all transactions access rows in the same order, or reducing transaction scope. Our Deadlock Detector helps you analyze these patterns and understand the dependency chain.</p>
-        </div>
-
-        <div class="faq-item">
-            <p class="faq-q">What is the difference between MySQL index types?</p>
-            <p class="faq-a">MySQL supports B-tree indexes (default, good for range queries and equality), hash indexes (InnoDB adaptive, good for exact lookups), full-text indexes (for text search with MATCH AGAINST), and composite indexes (multiple columns). The most common optimization is adding a composite index that covers the WHERE clause columns in selectivity order — most selective column first. Our Index Analyzer detects which queries would benefit from new indexes.</p>
-        </div>
-
+CREATE TABLE orders (
+  id INT PRIMARY KEY AUTO_INCREMENT,
+  user_id INT NOT NULL,
+  status ENUM('pending','paid','cancelled'),
+  total DECIMAL(10,2),
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id)
+);"></textarea>
+      </div>
     </div>
-</section>
 
-<!-- LONG-TAIL — mirrors Search Console queries + extensions -->
-<section>
+    <div class="option-row">
+      <div class="select-wrap">
+        <div class="field-label" style="margin-bottom:3px;">MySQL Version</div>
+        <select id="mysql-ver">
+          <option value="8.4">MySQL 8.4 (latest)</option>
+          <option value="8.0" selected>MySQL 8.0</option>
+          <option value="5.7">MySQL 5.7</option>
+        </select>
+      </div>
+      <div class="select-wrap">
+        <div class="field-label" style="margin-bottom:3px;">Optimization Focus</div>
+        <select id="opt-focus">
+          <option value="balanced" selected>Balanced</option>
+          <option value="indexes">Index optimization</option>
+          <option value="rewrite">Query rewrite</option>
+          <option value="reads">Read performance</option>
+          <option value="writes">Write performance</option>
+        </select>
+      </div>
+      <div class="select-wrap">
+        <div class="field-label" style="margin-bottom:3px;">Expected Row Volume</div>
+        <select id="row-volume">
+          <option value="small">&lt; 100K rows (small)</option>
+          <option value="medium" selected>100K – 10M rows (medium)</option>
+          <option value="large">10M – 1B rows (large)</option>
+          <option value="vlarge">&gt; 1B rows (very large)</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn btn-primary" id="optimize-btn" onclick="runOptimizer()">
+        <span class="spinner" id="spinner"></span>
+        <span id="btn-text">Optimize Query</span>
+      </button>
+      <button class="btn btn-ghost" onclick="clearAll()">Clear</button>
+      <span class="status-text" id="status-text">Ctrl+Enter to run</span>
+    </div>
+
+    <!-- RESULT AREA -->
+    <div class="result-wrap" id="result-wrap">
+      <div class="result-tabs">
+        <button class="rtab active" onclick="switchTab('analysis', this)">Analysis</button>
+        <button class="rtab" onclick="switchTab('rewrite', this)">Optimized Query</button>
+        <button class="rtab" onclick="switchTab('indexes', this)">Index Recommendations</button>
+        <button class="rtab" onclick="switchTab('explain', this)">EXPLAIN Guide</button>
+      </div>
+      <div class="rpanel active" id="rpanel-analysis">
+        <div class="ai-response" id="analysis-content"></div>
+      </div>
+      <div class="rpanel" id="rpanel-rewrite">
+        <div class="ai-response" id="rewrite-content"></div>
+      </div>
+      <div class="rpanel" id="rpanel-indexes">
+        <div class="ai-response" id="indexes-content"></div>
+      </div>
+      <div class="rpanel" id="rpanel-explain">
+        <div class="ai-response" id="explain-content"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXAMPLES -->
+  <section class="tool-section" id="examples">
     <div class="section-head">
-        <h2>Common Search Queries</h2>
-        <span class="section-rule"></span>
+      <h2>Example Queries to Optimize</h2>
+      <span class="section-rule"></span>
     </div>
-    <div class="tag-cloud">
-        <span class="tag">mysql optimization tool online</span>
-        <span class="tag">mysql optimize query online free</span>
-        <span class="tag">mysql tuning tool</span>
-        <span class="tag">mysql query optimization tool</span>
-        <span class="tag">mysql query optimizer online</span>
-        <span class="tag">mysql performance tuning tools</span>
-        <span class="tag">mysql explain query plan analyzer</span>
-        <span class="tag">mysql slow query analyzer</span>
-        <span class="tag">mysql index performance tool</span>
-        <span class="tag">mysql deadlock detection tool</span>
-        <span class="tag">mysql data analysis tools</span>
-        <span class="tag">mysql join performance analyzer</span>
-        <span class="tag">mysql replication lag analyzer</span>
-        <span class="tag">mysql connection pool calculator</span>
-        <span class="tag">mysql normalization checker</span>
-        <span class="tag">mysql schema design tool online</span>
-        <span class="tag">how to optimize mysql queries</span>
-        <span class="tag">mysql explain output analyzer</span>
+    <div class="examples-grid">
+      <div class="example-card" onclick="loadExample('nplus1')">
+        <span class="ex-tag">N+1 Pattern</span>
+        <div class="ex-title">Subquery in SELECT list</div>
+        <div class="ex-desc">Scalar subquery executed for every row — classic N+1 that should be a JOIN.</div>
+      </div>
+      <div class="example-card" onclick="loadExample('missing_index')">
+        <span class="ex-tag">Missing Index</span>
+        <div class="ex-title">Full table scan on large table</div>
+        <div class="ex-desc">WHERE clause on un-indexed column causing full scan on millions of rows.</div>
+      </div>
+      <div class="example-card" onclick="loadExample('wildcard')">
+        <span class="ex-tag">Leading Wildcard</span>
+        <div class="ex-title">LIKE '%keyword%' — no index possible</div>
+        <div class="ex-desc">Leading wildcard kills index usage. Needs FULLTEXT index or search engine.</div>
+      </div>
+      <div class="example-card" onclick="loadExample('select_star')">
+        <span class="ex-tag">SELECT *</span>
+        <div class="ex-title">Fetching all columns with JOIN</div>
+        <div class="ex-desc">SELECT * on multi-table JOIN transfers unnecessary data and prevents covering indexes.</div>
+      </div>
+      <div class="example-card" onclick="loadExample('order_limit')">
+        <span class="ex-tag">Pagination</span>
+        <div class="ex-title">OFFSET pagination on large dataset</div>
+        <div class="ex-desc">LIMIT 20 OFFSET 10000 scans 10,020 rows to return 20. Keyset pagination is faster.</div>
+      </div>
+      <div class="example-card" onclick="loadExample('function_index')">
+        <span class="ex-tag">Function on Column</span>
+        <div class="ex-title">Function in WHERE defeats index</div>
+        <div class="ex-desc">WHERE YEAR(created_at) = 2026 can't use index on created_at. Rewrite as range.</div>
+      </div>
     </div>
-</section>
+  </section>
 
-<!-- FOOTER -->
-<footer>
+  <!-- GUIDE -->
+  <section class="info-section" id="guide">
+    <div class="section-head">
+      <h2>MySQL Query Optimization Guide</h2>
+      <span class="section-rule"></span>
+    </div>
+    <div class="two-col">
+      <div class="info-block">
+        <h3>1. Profile before optimizing</h3>
+        <p>Never optimize blind. Enable the slow query log: <code>slow_query_log = ON</code>, <code>long_query_time = 1</code>. Use <code>EXPLAIN</code> to see the execution plan. Use <code>SHOW PROFILE</code> to see time per phase. The AI optimizer above automatically identifies the bottleneck category — full scan, filesort, bad join — and targets the highest-impact fix first.</p>
+      </div>
+      <div class="info-block">
+        <h3>2. The index hierarchy</h3>
+        <ul class="tip-list">
+          <li><strong>Primary key:</strong> Clustered index — always O(log n), zero overhead</li>
+          <li><strong>Covering index:</strong> All query columns in one index — no table lookup needed (Extra: Using index)</li>
+          <li><strong>Composite index:</strong> Column order matters — most selective first, then range column last</li>
+          <li><strong>Partial index (MySQL 8.0+):</strong> Index on expression for computed columns</li>
+          <li><strong>FULLTEXT:</strong> For LIKE '%text%' patterns — replaces leading wildcard scans</li>
+        </ul>
+      </div>
+      <div class="info-block">
+        <h3>3. Most impactful rewrites</h3>
+        <ul class="tip-list">
+          <li><strong>N+1 subquery → JOIN:</strong> Scalar subquery in SELECT list runs once per row</li>
+          <li><strong>IN (subquery) → EXISTS or JOIN:</strong> Correlated subqueries re-execute per row</li>
+          <li><strong>OFFSET pagination → Keyset:</strong> Replace LIMIT x OFFSET y with WHERE id &gt; last_seen_id</li>
+          <li><strong>YEAR(col) → range:</strong> Replace function on column with <code>BETWEEN '2026-01-01' AND '2026-12-31'</code></li>
+          <li><strong>SELECT * → explicit columns:</strong> Enables covering indexes, reduces network transfer</li>
+        </ul>
+      </div>
+      <div class="info-block">
+        <h3>4. InnoDB tuning baselines</h3>
+        <ul class="tip-list">
+          <li><strong>innodb_buffer_pool_size:</strong> Set to 60–80% of available RAM — the most impactful MySQL config</li>
+          <li><strong>innodb_io_capacity:</strong> Match to your disk IOPS (SSD: 2000+, NVMe: 10000+)</li>
+          <li><strong>innodb_flush_log_at_trx_commit:</strong> 2 for most workloads (1 = fully durable but slower)</li>
+          <li><strong>max_connections:</strong> Keep low — MySQL threads are heavy. Use connection pooling (PgBouncer port or ProxySQL)</li>
+          <li><strong>query_cache_type:</strong> Disable in MySQL 8.0+ (removed) — use application-level caching instead</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- EXPLAIN REFERENCE -->
+  <section class="info-section" id="reference">
+    <div class="section-head">
+      <h2>MySQL EXPLAIN Output Reference</h2>
+      <span class="section-rule"></span>
+    </div>
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Column</th><th>Key Values</th><th>What it means</th><th>Action needed</th></tr></thead>
+        <tbody>
+          <tr><td class="td-key">type</td><td class="td-code">ALL</td><td>Full table scan — every row read</td><td>⚠ Add index on WHERE/JOIN column</td></tr>
+          <tr><td class="td-key">type</td><td class="td-code">index</td><td>Full index scan (better than ALL)</td><td>Consider covering index or WHERE filter</td></tr>
+          <tr><td class="td-key">type</td><td class="td-code">range</td><td>Index range scan (BETWEEN, &gt;, &lt;, IN)</td><td>✓ Good — check rows estimate</td></tr>
+          <tr><td class="td-key">type</td><td class="td-code">ref</td><td>Index lookup with non-unique index</td><td>✓ Good for JOINs</td></tr>
+          <tr><td class="td-key">type</td><td class="td-code">eq_ref</td><td>Unique index — one row per lookup</td><td>✓ Optimal for JOINs on PK/UNIQUE</td></tr>
+          <tr><td class="td-key">type</td><td class="td-code">const/system</td><td>Single row result — best possible</td><td>✓ Optimal</td></tr>
+          <tr><td class="td-key">Extra</td><td class="td-code">Using filesort</td><td>ORDER BY can't use index — separate sort step</td><td>⚠ Add index matching ORDER BY columns</td></tr>
+          <tr><td class="td-key">Extra</td><td class="td-code">Using temporary</td><td>Temp table created (GROUP BY / DISTINCT)</td><td>⚠ Check GROUP BY columns match index</td></tr>
+          <tr><td class="td-key">Extra</td><td class="td-code">Using index</td><td>Covering index — no table lookup needed</td><td>✓ Optimal — index contains all columns</td></tr>
+          <tr><td class="td-key">Extra</td><td class="td-code">Using where</td><td>WHERE filter applied after index lookup</td><td>May indicate partial index match</td></tr>
+          <tr><td class="td-key">rows</td><td class="td-code">High number</td><td>Estimated rows scanned per result row</td><td>⚠ If &gt;1000x result rows — index missing</td></tr>
+          <tr><td class="td-key">key</td><td class="td-code">NULL</td><td>No index used for this table</td><td>⚠ Add appropriate index</td></tr>
+          <tr><td class="td-key">possible_keys</td><td class="td-code">Many keys</td><td>MySQL considered many indexes</td><td>Review if all are actually needed</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="faq-section" id="faq">
+    <div class="section-head">
+      <h2>MySQL Query Optimizer – FAQ</h2>
+      <span class="section-rule"></span>
+    </div>
+
+    <div class="faq-item">
+      <p class="faq-q">How does this MySQL query optimizer tool work?</p>
+      <p class="faq-a">You paste your SQL query and optionally your CREATE TABLE schema. The AI analyzes the query structure — JOIN types, WHERE clause columns, ORDER BY, subqueries, and GROUP BY — against the schema to identify missing indexes, structural antipatterns (N+1, leading wildcards, functions on indexed columns), and rewrite opportunities. It returns a specific rewritten query, precise index creation statements, and an explanation of each change. Unlike rule-based linters, it understands query intent and proposes semantically equivalent rewrites.</p>
+    </div>
+    <div class="faq-item">
+      <p class="faq-q">Do I need to provide the schema (CREATE TABLE)?</p>
+      <p class="faq-a">Schema is optional but strongly recommended. Without it, the optimizer can only analyze query structure (N+1 patterns, wildcard usage, SELECT *, etc.). With schema, it can see existing indexes, column data types, cardinality hints, and foreign keys — enabling precise index recommendations like <code>ALTER TABLE orders ADD INDEX idx_status_created (status, created_at);</code> instead of generic advice.</p>
+    </div>
+    <div class="faq-item">
+      <p class="faq-q">What is the difference between this tool and Aiven SQL Query Optimizer?</p>
+      <p class="faq-a">Aiven's optimizer requires you to run a metadata query on your actual database server to collect statistics, paste the output into their tool, and have an Aiven account. This tool requires nothing — paste SQL and get results immediately. The tradeoff: Aiven's optimizer uses real table statistics (row counts, cardinality) for more precise recommendations on very large or unusual datasets. This tool uses schema-based analysis which covers 95% of common optimization cases without needing database access.</p>
+    </div>
+    <div class="faq-item">
+      <p class="faq-q">How do I use MySQL EXPLAIN to find slow query issues?</p>
+      <p class="faq-a">Prepend <code>EXPLAIN</code> to your SELECT: <code>EXPLAIN SELECT * FROM orders WHERE status = 'pending';</code>. Check the <code>type</code> column — <code>ALL</code> means full table scan (bad). Check <code>Extra</code> — <code>Using filesort</code> or <code>Using temporary</code> are warning signs. Check <code>rows</code> — high estimated row counts relative to actual results indicate poor index usage. Use <code>EXPLAIN FORMAT=JSON</code> for more detail, or <code>EXPLAIN ANALYZE</code> in MySQL 8.0+ for actual execution statistics.</p>
+    </div>
+    <div class="faq-item">
+      <p class="faq-q">What MySQL query patterns cause the worst performance?</p>
+      <p class="faq-a">Ranked by frequency and impact: (1) Missing index on JOIN or WHERE column — causes full table scan on every query. (2) N+1 subquery in SELECT list — executes once per result row. (3) <code>LIKE '%keyword%'</code> leading wildcard — no B-tree index can be used. (4) <code>ORDER BY</code> with no matching index — causes filesort. (5) <code>LIMIT x OFFSET y</code> deep pagination — scans all rows up to the offset. (6) <code>SELECT *</code> preventing covering indexes. (7) Functions on indexed columns in WHERE: <code>WHERE YEAR(created_at) = 2026</code>.</p>
+    </div>
+  </section>
+
+  <footer>
     <div class="footer-inner">
-        <span class="footer-brand">MySQL Tools</span>
-        <p>15 free tools for DBAs, backend developers, and DevOps engineers.</p>
+      <span class="footer-brand">MySQL Tools</span>
+      <nav class="footer-nav">
+        <a href="../">All Tools</a>
+        <a href="../explain/">EXPLAIN Analyzer</a>
+        <a href="../index/">Index Analyzer</a>
+        <a href="../deadlock/">Deadlock Detector</a>
+      </nav>
     </div>
-</footer>
-
+  </footer>
 
 </div>
+
+<!-- ================================================================
+     AI OPTIMIZER — Anthropic API via fetch
+     ================================================================ -->
+<script>
+
+var EXAMPLES = {
+  nplus1: {
+    sql: "SELECT\n  u.id,\n  u.name,\n  (SELECT COUNT(*) FROM orders o WHERE o.user_id = u.id) AS order_count,\n  (SELECT SUM(o.total) FROM orders o WHERE o.user_id = u.id) AS total_spent\nFROM users u\nWHERE u.created_at > '2026-01-01';",
+    schema: "CREATE TABLE users (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  name VARCHAR(100),\n  email VARCHAR(150),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);\n\nCREATE TABLE orders (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  user_id INT NOT NULL,\n  total DECIMAL(10,2),\n  status VARCHAR(20),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_user (user_id)\n);"
+  },
+  missing_index: {
+    sql: "SELECT id, email, status\nFROM subscriptions\nWHERE plan_type = 'premium'\n  AND status = 'active'\n  AND renewal_date < NOW()\nORDER BY renewal_date ASC\nLIMIT 500;",
+    schema: "CREATE TABLE subscriptions (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  user_id INT NOT NULL,\n  plan_type VARCHAR(50),\n  status ENUM('active','cancelled','paused'),\n  renewal_date DATE,\n  price DECIMAL(8,2),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);"
+  },
+  wildcard: {
+    sql: "SELECT id, title, body, author_id\nFROM articles\nWHERE body LIKE '%machine learning%'\n  OR title LIKE '%machine learning%'\nORDER BY created_at DESC\nLIMIT 20;",
+    schema: "CREATE TABLE articles (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  title VARCHAR(500),\n  body TEXT,\n  author_id INT,\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP\n);"
+  },
+  select_star: {
+    sql: "SELECT *\nFROM orders o\nJOIN users u ON o.user_id = u.id\nJOIN products p ON o.product_id = p.id\nWHERE o.status = 'shipped'\n  AND o.created_at BETWEEN '2026-01-01' AND '2026-06-01';",
+    schema: "CREATE TABLE orders (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  user_id INT, product_id INT, status VARCHAR(20),\n  total DECIMAL(10,2), created_at TIMESTAMP,\n  INDEX idx_status (status), INDEX idx_created (created_at)\n);\nCREATE TABLE users (\n  id INT PRIMARY KEY, name VARCHAR(100), email VARCHAR(150), address TEXT, phone VARCHAR(20), created_at TIMESTAMP\n);\nCREATE TABLE products (\n  id INT PRIMARY KEY, name VARCHAR(200), price DECIMAL(10,2), stock INT, description TEXT, category VARCHAR(100)\n);"
+  },
+  order_limit: {
+    sql: "SELECT id, title, created_at\nFROM blog_posts\nWHERE status = 'published'\nORDER BY created_at DESC\nLIMIT 20 OFFSET 50000;",
+    schema: "CREATE TABLE blog_posts (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  title VARCHAR(300),\n  status ENUM('draft','published','archived'),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_status (status)\n);"
+  },
+  function_index: {
+    sql: "SELECT id, user_id, amount, created_at\nFROM transactions\nWHERE YEAR(created_at) = 2026\n  AND MONTH(created_at) IN (1, 2, 3)\n  AND status = 'completed';",
+    schema: "CREATE TABLE transactions (\n  id INT PRIMARY KEY AUTO_INCREMENT,\n  user_id INT NOT NULL,\n  amount DECIMAL(12,2),\n  status VARCHAR(20),\n  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,\n  INDEX idx_created (created_at),\n  INDEX idx_status (status)\n);"
+  }
+};
+
+function loadExample(key) {
+  var ex = EXAMPLES[key];
+  if (!ex) { return; }
+  document.getElementById('sql-input').value = ex.sql;
+  document.getElementById('schema-input').value = ex.schema;
+  document.getElementById('optimizer').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}
+
+function buildPrompt() {
+  var sql    = document.getElementById('sql-input').value.trim();
+  var schema = document.getElementById('schema-input').value.trim();
+  var ver    = document.getElementById('mysql-ver').value;
+  var focus  = document.getElementById('opt-focus').value;
+  var volume = document.getElementById('row-volume').value;
+
+  var volumeDesc = { small:'under 100K rows', medium:'100K to 10M rows', large:'10M to 1 billion rows', vlarge:'over 1 billion rows' };
+
+  return 'You are a senior MySQL DBA and query optimization expert. Analyze the following MySQL query and provide detailed optimization recommendations.\n\n'
+    + 'Target MySQL version: ' + ver + '\n'
+    + 'Optimization focus: ' + focus + '\n'
+    + 'Expected data volume: ' + (volumeDesc[volume] || volume) + '\n\n'
+    + '## SQL Query\n```sql\n' + sql + '\n```\n\n'
+    + (schema ? '## Schema (CREATE TABLE statements)\n```sql\n' + schema + '\n```\n\n' : '')
+    + 'Provide a structured response with these FOUR clearly labeled sections:\n\n'
+    + '### SECTION 1: PERFORMANCE ANALYSIS\n'
+    + 'Identify all performance issues: full table scans, missing indexes, N+1 patterns, filesorts, temp tables, leading wildcards, functions on indexed columns, bad JOIN order, SELECT * overhead, deep OFFSET pagination. Rate overall severity.\n\n'
+    + '### SECTION 2: OPTIMIZED QUERY\n'
+    + 'Provide the complete rewritten SQL query. Show the full query — never truncate. If no rewrite is needed, explain why. Add SQL comments explaining key changes.\n\n'
+    + '### SECTION 3: INDEX RECOMMENDATIONS\n'
+    + 'Provide exact ALTER TABLE or CREATE INDEX statements. For each index explain: which query clause it helps, estimated selectivity, whether it\'s a covering index, and the specific EXPLAIN output improvement expected (type: ALL → ref, etc.).\n\n'
+    + '### SECTION 4: HOW TO VERIFY WITH EXPLAIN\n'
+    + 'Show the exact EXPLAIN statement to run on the original and optimized queries. Explain what to look for in the output to confirm the optimization worked. Include specific column values to compare (type, key, rows, Extra).';
+}
+
+function runOptimizer() {
+  var sql = document.getElementById('sql-input').value.trim();
+  if (!sql) { alert('Paste a MySQL query to optimize.'); return; }
+
+  /* UI: loading state */
+  var btn = document.getElementById('optimize-btn');
+  var spinner = document.getElementById('spinner');
+  var btnText = document.getElementById('btn-text');
+  btn.disabled = true;
+  spinner.style.display = 'block';
+  btnText.textContent = 'Analyzing...';
+  document.getElementById('status-text').textContent = 'AI is analyzing your query...';
+
+  /* Show result area with streaming content */
+  var resultWrap = document.getElementById('result-wrap');
+  resultWrap.className = 'result-wrap visible';
+
+  /* Reset all panels */
+  document.getElementById('analysis-content').innerHTML = '<span class="stream-cursor"></span>';
+  document.getElementById('rewrite-content').innerHTML = '';
+  document.getElementById('indexes-content').innerHTML = '';
+  document.getElementById('explain-content').innerHTML = '';
+
+  /* Switch to analysis tab */
+  switchTab('analysis', document.querySelector('.rtab'));
+
+  fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 1000,
+      messages: [{ role: 'user', content: buildPrompt() }]
+    })
+  })
+  .then(function(res) {
+    if (!res.ok) { throw new Error('API error: ' + res.status); }
+    return res.json();
+  })
+  .then(function(data) {
+    var raw = '';
+    if (data.content && data.content.length) {
+      for (var i = 0; i < data.content.length; i++) {
+        if (data.content[i].type === 'text') { raw += data.content[i].text; }
+      }
+    }
+    parseAndRender(raw);
+  })
+  .catch(function(err) {
+    document.getElementById('analysis-content').innerHTML =
+      '<p style="color:var(--red);">Error: ' + escHTML(err.message) + '</p>'
+      + '<p style="margin-top:8px;">Check browser console for details. The API key must be provided via the Claude.ai artifact system.</p>';
+  })
+  .finally(function() {
+    btn.disabled = false;
+    spinner.style.display = 'none';
+    btnText.textContent = 'Optimize Query';
+    document.getElementById('status-text').textContent = 'Analysis complete';
+  });
+}
+
+/* Parse the 4-section AI response and distribute to tabs */
+function parseAndRender(raw) {
+  var s1 = extractSection(raw, 'SECTION 1', 'SECTION 2');
+  var s2 = extractSection(raw, 'SECTION 2', 'SECTION 3');
+  var s3 = extractSection(raw, 'SECTION 3', 'SECTION 4');
+  var s4 = extractSection(raw, 'SECTION 4', null);
+
+  /* Fallback: if sections not found cleanly, put everything in analysis */
+  if (!s1 && !s2 && !s3) { s1 = raw; }
+
+  document.getElementById('analysis-content').innerHTML = renderMarkdown(s1 || '');
+  document.getElementById('rewrite-content').innerHTML  = renderMarkdown(s2 || '');
+  document.getElementById('indexes-content').innerHTML  = renderMarkdown(s3 || '');
+  document.getElementById('explain-content').innerHTML  = renderMarkdown(s4 || '');
+
+  /* Add copy buttons to all code blocks */
+  addCopyButtons();
+}
+
+function extractSection(text, startMarker, endMarker) {
+  var si = text.indexOf(startMarker);
+  if (si === -1) { return ''; }
+  var content = text.slice(si);
+  if (endMarker) {
+    var ei = content.indexOf(endMarker);
+    if (ei !== -1) { content = content.slice(0, ei); }
+  }
+  /* Remove the section header line itself */
+  content = content.replace(/^[^\n]*\n/, '').trim();
+  return content;
+}
+
+/* Minimal Markdown renderer (ES5 compatible) */
+function renderMarkdown(md) {
+  if (!md) { return '<p style="color:var(--muted);font-size:13px;">No content for this section.</p>'; }
+
+  var html = md;
+
+  /* Code blocks — must go first */
+  html = html.replace(/```(\w*)\n?([\s\S]*?)```/g, function(m, lang, code) {
+    return '<pre><button class="copy-code-btn" onclick="copyCode(this)">Copy</button><code>' + escHTML(code.trim()) + '</code></pre>';
+  });
+
+  /* Inline code */
+  html = html.replace(/`([^`]+)`/g, '<code>$1</code>');
+
+  /* Headers */
+  html = html.replace(/^#### (.+)$/gm, '<h4 style="font-size:13px;font-weight:600;color:var(--text);margin:16px 0 6px;">$1</h4>');
+  html = html.replace(/^### (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^## (.+)$/gm, '<h3>$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h3>$1</h3>');
+
+  /* Bold */
+  html = html.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+
+  /* Unordered lists */
+  html = html.replace(/(?:^[-*] .+\n?)+/gm, function(block) {
+    var items = block.trim().split('\n').map(function(l) {
+      return '<li>' + l.replace(/^[-*] /, '') + '</li>';
+    });
+    return '<ul>' + items.join('') + '</ul>';
+  });
+
+  /* Ordered lists */
+  html = html.replace(/(?:^\d+\. .+\n?)+/gm, function(block) {
+    var items = block.trim().split('\n').map(function(l) {
+      return '<li>' + l.replace(/^\d+\. /, '') + '</li>';
+    });
+    return '<ol>' + items.join('') + '</ol>';
+  });
+
+  /* Paragraphs */
+  html = html.split(/\n\n+/).map(function(block) {
+    block = block.trim();
+    if (!block) { return ''; }
+    if (/^<(h[1-6]|ul|ol|pre|blockquote)/.test(block)) { return block; }
+    return '<p>' + block.replace(/\n/g, ' ') + '</p>';
+  }).join('\n');
+
+  return html;
+}
+
+function addCopyButtons() {
+  /* Copy buttons already added inline in renderMarkdown */
+}
+
+function copyCode(btn) {
+  var pre = btn.parentNode;
+  var code = pre.querySelector('code');
+  var text = code ? code.textContent : '';
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(function() {
+      btn.textContent = 'Copied!';
+      setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+    });
+  } else {
+    var ta = document.createElement('textarea');
+    ta.value = text; ta.style.position = 'fixed'; ta.style.opacity = '0';
+    document.body.appendChild(ta); ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    btn.textContent = 'Copied!';
+    setTimeout(function() { btn.textContent = 'Copy'; }, 1500);
+  }
+}
+
+function switchTab(name, btn) {
+  var tabs = document.querySelectorAll('.rtab');
+  var panels = document.querySelectorAll('.rpanel');
+  for (var i = 0; i < tabs.length; i++) { tabs[i].className = 'rtab'; }
+  for (var j = 0; j < panels.length; j++) { panels[j].className = 'rpanel'; }
+  if (btn) { btn.className = 'rtab active'; }
+  var panel = document.getElementById('rpanel-' + name);
+  if (panel) { panel.className = 'rpanel active'; }
+}
+
+function clearAll() {
+  document.getElementById('sql-input').value = '';
+  document.getElementById('schema-input').value = '';
+  document.getElementById('result-wrap').className = 'result-wrap';
+  document.getElementById('status-text').textContent = 'Ctrl+Enter to run';
+  ['analysis-content','rewrite-content','indexes-content','explain-content'].forEach(function(id) {
+    document.getElementById(id).innerHTML = '';
+  });
+}
+
+function escHTML(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+/* Keyboard shortcut */
+document.addEventListener('keydown', function(e) {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') { runOptimizer(); }
+});
+
+</script>
 </body>
 </html>
